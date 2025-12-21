@@ -30,7 +30,7 @@ Funcionalidades e layout estão sendo implementados gradualmente.
 
 1. Clone o repositório:
 
-git clone https://github.com/seu-usuario/mft-frontend.git
+git clone https://github.com/JoaoVictorCostaBarbosa/mft-front.git
 
 2. Entre na pasta do projeto:
 
