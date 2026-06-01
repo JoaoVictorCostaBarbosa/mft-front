@@ -6,6 +6,8 @@ type AuthFieldProps = {
   name: string;
   type?: string;
   autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  maxLength?: number;
 };
 
 export function AuthField({
@@ -13,6 +15,8 @@ export function AuthField({
   name,
   type = "text",
   autoComplete,
+  inputMode,
+  maxLength,
 }: AuthFieldProps) {
   return (
     <div className="grid gap-2">
@@ -24,6 +28,8 @@ export function AuthField({
         name={name}
         type={type}
         autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
         className="bg-background/60"
       />
     </div>
