@@ -35,6 +35,12 @@ export function refreshSession() {
   });
 }
 
+export function signOut() {
+  return apiFetch<void>(apiRoutes.auth.logout, {
+    method: "PATCH",
+  });
+}
+
 export function getCurrentUser() {
   return apiFetch<AuthSession["user"]>(apiRoutes.users.me);
 }

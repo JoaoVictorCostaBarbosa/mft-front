@@ -9,9 +9,11 @@ import { AuthFormLayout } from "@/features/auth/components/auth-form-layout";
 import { Button } from "@/components/ui/button";
 import { getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
+import { useAuthSession } from "@/features/auth";
 
 export function SignUpScreen() {
   const router = useRouter();
+  const { setAuthenticatedUser } = useAuthSession();
   const [emailToVerify, setEmailToVerify] = React.useState("");
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
@@ -52,10 +54,11 @@ export function SignUpScreen() {
     const code = Number(String(formData.get("code") ?? "").trim());
 
     try {
-      await verifyAccount({
+      const session = await verifyAccount({
         email: emailToVerify,
         code,
       });
+      setAuthenticatedUser(session.user);
       router.push(routes.dashboard);
     } catch (error) {
       setError(getApiErrorMessage(error));
