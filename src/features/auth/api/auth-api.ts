@@ -5,6 +5,7 @@ import type {
   AuthSession,
   SignInCredentials,
   SignUpCredentials,
+  VerifyAccountRequest,
 } from "../types";
 
 export function signIn(credentials: SignInCredentials) {
@@ -18,5 +19,12 @@ export function signUp(credentials: SignUpCredentials) {
   return apiFetch<void>(apiRoutes.auth.register, {
     method: "POST",
     body: credentials,
+  });
+}
+
+export function verifyAccount(payload: VerifyAccountRequest) {
+  return apiFetch<AuthSession>(apiRoutes.auth.verify, {
+    method: "POST",
+    body: payload,
   });
 }
