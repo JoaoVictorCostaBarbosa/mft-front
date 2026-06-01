@@ -24,7 +24,7 @@ function BottomNav({ className, items, ...props }: BottomNavProps) {
     <nav
       data-slot="bottom-nav"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/85",
+        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.6rem)] pt-2 backdrop-blur supports-[backdrop-filter]:bg-card/85",
         className,
       )}
       {...props}
@@ -46,8 +46,8 @@ function BottomNav({ className, items, ...props }: BottomNavProps) {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
-                isActive && "bg-secondary text-primary",
+                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-md px-1.5 text-[0.6875rem] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+                isActive && "bg-secondary text-primary shadow-sm",
               )}
             >
               <span className="[&_svg]:size-5">{item.icon}</span>
