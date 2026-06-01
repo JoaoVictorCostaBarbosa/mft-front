@@ -21,6 +21,7 @@ export const apiRoutes = {
   },
   workoutPlans: {
     list: "/api/workout-plans",
+    create: "/api/workout-plans",
   },
   workoutTemplates: {
     list: "/api/workout-templates",

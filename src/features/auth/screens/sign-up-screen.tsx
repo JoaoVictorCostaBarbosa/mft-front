@@ -19,17 +19,40 @@ export function SignUpScreen() {
   const [success, setSuccess] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  function validatePassword(password: string): string | null {
+    if (password.length < 8) {
+      return "A senha deve ter pelo menos 8 caracteres.";
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return "A senha deve conter ao menos uma letra maiúscula.";
+    }
+
+    if (!/[0-9]/.test(password)) {
+      return "A senha deve conter ao menos um número.";
+    }
+
+    return null;
+  }
+
   async function handleSignUp(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setSuccess("");
-    setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      const email = String(formData.get("email") ?? "");
-
       await signUp({
         name: String(formData.get("name") ?? ""),
         email,
@@ -70,6 +93,7 @@ export function SignUpScreen() {
   if (emailToVerify) {
     return (
       <AuthFormLayout
+        key="verify"
         title="Confirme seu e-mail"
         description={`Digite o código de 6 dígitos enviado para ${emailToVerify}.`}
         submitLabel="Confirmar código"
@@ -106,6 +130,7 @@ export function SignUpScreen() {
 
   return (
     <AuthFormLayout
+      key="signup"
       title="Crie sua conta"
       description="Comece a organizar treinos e acompanhar sua evolução física."
       submitLabel="Criar conta"
