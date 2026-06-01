@@ -55,7 +55,19 @@ export async function apiFetch<TResponse>(
   });
 
   if (!response.ok) {
-    throw new ApiError("Falha ao comunicar com a API.", response.status);
+    const text = await response.text();
+    let message = "Falha ao comunicar com a API.";
+
+    if (text) {
+      try {
+        const json = JSON.parse(text);
+        message = json.message ?? json.error ?? message;
+      } catch {
+        message = text || message;
+      }
+    }
+
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {
