@@ -1,5 +1,10 @@
+import { AuthGuard } from "@/features/auth";
 import { WorkoutsScreen } from "@/features/workouts";
 
 export default function WorkoutsPage() {
-  return <WorkoutsScreen />;
+  return (
+    <AuthGuard>
+      <WorkoutsScreen />
+    </AuthGuard>
+  );
 }

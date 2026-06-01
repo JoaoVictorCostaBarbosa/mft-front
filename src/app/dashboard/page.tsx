@@ -1,5 +1,10 @@
+import { AuthGuard } from "@/features/auth";
 import { DashboardScreen } from "@/features/dashboard";
 
 export default function DashboardPage() {
-  return <DashboardScreen />;
+  return (
+    <AuthGuard>
+      <DashboardScreen />
+    </AuthGuard>
+  );
 }
