@@ -14,6 +14,26 @@ export class ApiError extends Error {
   }
 }
 
+export function getApiErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    if (error.status === 401) {
+      return "E-mail ou senha inválidos.";
+    }
+
+    if (error.status === 409) {
+      return "Este e-mail já está em uso.";
+    }
+
+    if (error.status >= 500) {
+      return "Erro inesperado. Tente novamente mais tarde.";
+    }
+
+    return error.message;
+  }
+
+  return "Erro inesperado. Tente novamente mais tarde.";
+}
+
 export async function apiFetch<TResponse>(
   path: string,
   options: RequestOptions = {},
@@ -26,6 +46,7 @@ export async function apiFetch<TResponse>(
 
   const response = await fetch(url, {
     ...init,
+    credentials: init.credentials ?? "include",
     headers: {
       "Content-Type": "application/json",
       ...headers,
