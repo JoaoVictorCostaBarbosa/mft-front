@@ -1,0 +1,94 @@
+"use client";
+
+import * as React from "react";
+
+import {
+  getCurrentUser,
+  refreshSession,
+  signOut,
+} from "@/features/auth/api/auth-api";
+import type { AuthSession } from "@/features/auth/types";
+
+type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+
+type AuthContextValue = {
+  status: AuthStatus;
+  user: AuthSession["user"] | null;
+  refresh: () => Promise<void>;
+  setAuthenticatedUser: (user: AuthSession["user"]) => void;
+  clearSession: () => Promise<void>;
+};
+
+const AuthContext = React.createContext<AuthContextValue | null>(null);
+
+async function resolveSession() {
+  try {
+    return await getCurrentUser();
+  } catch {
+    await refreshSession();
+    return getCurrentUser();
+  }
+}
+
+type AuthProviderProps = {
+  children: React.ReactNode;
+};
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [status, setStatus] = React.useState<AuthStatus>("loading");
+  const [user, setUser] = React.useState<AuthSession["user"] | null>(null);
+
+  const refresh = React.useCallback(async () => {
+    setStatus("loading");
+
+    try {
+      const currentUser = await resolveSession();
+      setUser(currentUser);
+      setStatus("authenticated");
+    } catch {
+      setUser(null);
+      setStatus("unauthenticated");
+    }
+  }, []);
+
+  const setAuthenticatedUser = React.useCallback((user: AuthSession["user"]) => {
+    setUser(user);
+    setStatus("authenticated");
+  }, []);
+
+  const clearSession = React.useCallback(async () => {
+    try {
+      await signOut();
+    } finally {
+      setUser(null);
+      setStatus("unauthenticated");
+    }
+  }, []);
+
+  React.useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const value = React.useMemo<AuthContextValue>(
+    () => ({
+      status,
+      user,
+      refresh,
+      setAuthenticatedUser,
+      clearSession,
+    }),
+    [clearSession, refresh, setAuthenticatedUser, status, user],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuthSession() {
+  const context = React.useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuthSession must be used within AuthProvider");
+  }
+
+  return context;
+}

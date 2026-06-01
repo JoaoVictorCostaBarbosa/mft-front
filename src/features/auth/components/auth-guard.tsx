@@ -3,8 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { LoadingState } from "@/components/ui/loading-state";
-import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
+import { useAuthSession } from "@/features/auth/components/auth-provider";
 import { routes } from "@/lib/routes";
 
 type AuthGuardProps = {
@@ -26,12 +25,7 @@ export function AuthGuard({
   }, [redirectTo, router, status]);
 
   if (status !== "authenticated") {
-    return (
-      <LoadingState
-        title="Verificando sessão"
-        description="Estamos conferindo se sua sessão ainda está ativa."
-      />
-    );
+    return null;
   }
 
   return children;

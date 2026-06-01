@@ -9,9 +9,11 @@ import { AuthFormLayout } from "@/features/auth/components/auth-form-layout";
 import { signIn } from "@/features/auth/api/auth-api";
 import { getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
+import { useAuthSession } from "@/features/auth";
 
 export function SignInScreen() {
   const router = useRouter();
+  const { setAuthenticatedUser } = useAuthSession();
   const [error, setError] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -23,10 +25,11 @@ export function SignInScreen() {
     const formData = new FormData(event.currentTarget);
 
     try {
-      await signIn({
+      const session = await signIn({
         email: String(formData.get("email") ?? ""),
         password: String(formData.get("password") ?? ""),
       });
+      setAuthenticatedUser(session.user);
       router.push(routes.dashboard);
     } catch (error) {
       setError(getApiErrorMessage(error));
