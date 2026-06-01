@@ -46,3 +46,7 @@ export type WorkoutPlanSummary = {
 export type WorkoutPlan = WorkoutPlanSummary & {
   templates: WorkoutTemplateSummary[];
 };
+
+export type CreateWorkoutPlanRequest = {
+  name: string;
+};
