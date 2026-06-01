@@ -1,0 +1,22 @@
+import { apiRoutes } from "@/lib/api-routes";
+import { apiFetch } from "@/lib/http";
+
+import type {
+  AuthSession,
+  SignInCredentials,
+  SignUpCredentials,
+} from "../types";
+
+export function signIn(credentials: SignInCredentials) {
+  return apiFetch<AuthSession>(apiRoutes.auth.login, {
+    method: "POST",
+    body: credentials,
+  });
+}
+
+export function signUp(credentials: SignUpCredentials) {
+  return apiFetch<void>(apiRoutes.auth.register, {
+    method: "POST",
+    body: credentials,
+  });
+}
