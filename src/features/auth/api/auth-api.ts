@@ -28,3 +28,13 @@ export function verifyAccount(payload: VerifyAccountRequest) {
     body: payload,
   });
 }
+
+export function refreshSession() {
+  return apiFetch<void>(apiRoutes.auth.refresh, {
+    method: "POST",
+  });
+}
+
+export function getCurrentUser() {
+  return apiFetch<AuthSession["user"]>(apiRoutes.users.me);
+}

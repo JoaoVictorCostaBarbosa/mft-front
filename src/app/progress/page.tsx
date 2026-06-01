@@ -1,5 +1,10 @@
+import { AuthGuard } from "@/features/auth";
 import { ProgressScreen } from "@/features/progress";
 
 export default function ProgressPage() {
-  return <ProgressScreen />;
+  return (
+    <AuthGuard>
+      <ProgressScreen />
+    </AuthGuard>
+  );
 }
