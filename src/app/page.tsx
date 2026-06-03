@@ -1,5 +1,10 @@
+import { PublicAuthGuard } from "@/features/auth";
 import { OnboardingScreen } from "@/features/onboarding";
 
 export default function Home() {
-  return <OnboardingScreen />;
+  return (
+    <PublicAuthGuard>
+      <OnboardingScreen />
+    </PublicAuthGuard>
+  );
 }

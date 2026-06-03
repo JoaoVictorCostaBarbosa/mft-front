@@ -3,6 +3,7 @@ export type Equipment =
   | "Dumbbell"
   | "Machine"
   | "Bodyweight"
+  | "Kettlebell"
   | "Kettlerbell"
   | "ResistanceBand"
   | "Other";
@@ -48,5 +49,14 @@ export type WorkoutPlan = WorkoutPlanSummary & {
 };
 
 export type CreateWorkoutPlanRequest = {
+  name: string;
+};
+
+export type CreateWorkoutTemplateRequest = {
+  name: string;
+};
+
+export type UpdateWorkoutPlanNameRequest = {
+  workout_plan_id: string;
   name: string;
 };

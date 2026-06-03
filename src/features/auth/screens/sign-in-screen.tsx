@@ -7,7 +7,7 @@ import * as React from "react";
 import { AuthField } from "@/features/auth/components/auth-field";
 import { AuthFormLayout } from "@/features/auth/components/auth-form-layout";
 import { signIn } from "@/features/auth/api/auth-api";
-import { getApiErrorMessage } from "@/lib/http";
+import { ApiError, getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
 import { useAuthSession } from "@/features/auth";
 
@@ -32,7 +32,11 @@ export function SignInScreen() {
       setAuthenticatedUser(session.user);
       router.push(routes.dashboard);
     } catch (error) {
-      setError(getApiErrorMessage(error));
+      setError(
+        error instanceof ApiError && error.status === 401
+          ? "E-mail ou senha inválidos."
+          : getApiErrorMessage(error),
+      );
     } finally {
       setIsSubmitting(false);
     }

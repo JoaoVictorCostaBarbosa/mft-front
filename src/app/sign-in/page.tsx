@@ -1,5 +1,9 @@
-import { SignInScreen } from "@/features/auth";
+import { PublicAuthGuard, SignInScreen } from "@/features/auth";
 
 export default function SignInPage() {
-  return <SignInScreen />;
+  return (
+    <PublicAuthGuard>
+      <SignInScreen />
+    </PublicAuthGuard>
+  );
 }

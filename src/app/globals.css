@@ -31,6 +31,15 @@
   --warning: #f59e0b;
   --warning-foreground: #020617;
 
+  --exercise-arms: #38bdf8;
+  --exercise-back: #60a5fa;
+  --exercise-chest: #f472b6;
+  --exercise-core: #a78bfa;
+  --exercise-full-body: #f59e0b;
+  --exercise-legs: #22c55e;
+  --exercise-other: #94a3b8;
+  --exercise-shoulders: #00e5e5;
+
   --border: #263241;
   --input: #263241;
   --ring: #00e5e5;
@@ -68,6 +77,15 @@
 
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+
+  --color-exercise-arms: var(--exercise-arms);
+  --color-exercise-back: var(--exercise-back);
+  --color-exercise-chest: var(--exercise-chest);
+  --color-exercise-core: var(--exercise-core);
+  --color-exercise-full-body: var(--exercise-full-body);
+  --color-exercise-legs: var(--exercise-legs);
+  --color-exercise-other: var(--exercise-other);
+  --color-exercise-shoulders: var(--exercise-shoulders);
 
   --color-border: var(--border);
   --color-input: var(--input);

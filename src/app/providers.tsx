@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Toaster } from "@/components/ui/toast";
 import { AuthProvider } from "@/features/auth";
+import { WorkoutPlansProvider } from "@/features/workouts";
 
 type ProvidersProps = {
   children: React.ReactNode;
@@ -12,8 +13,10 @@ type ProvidersProps = {
 export function Providers({ children }: ProvidersProps) {
   return (
     <AuthProvider>
-      {children}
-      <Toaster />
+      <WorkoutPlansProvider>
+        {children}
+        <Toaster />
+      </WorkoutPlansProvider>
     </AuthProvider>
   );
 }

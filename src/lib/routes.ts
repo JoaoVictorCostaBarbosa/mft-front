@@ -3,6 +3,8 @@ export const routes = {
   onboarding: "/onboarding",
   dashboard: "/dashboard",
   workouts: "/workouts",
+  workoutPlan: (planId: string) => `/workouts/${planId}`,
+  workoutExercises: "/workouts/exercises",
   progress: "/progress",
   bodyMetrics: "/body-metrics",
   profile: "/profile",

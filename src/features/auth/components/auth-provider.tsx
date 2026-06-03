@@ -2,12 +2,9 @@
 
 import * as React from "react";
 
-import {
-  getCurrentUser,
-  refreshSession,
-  signOut,
-} from "@/features/auth/api/auth-api";
+import { getCurrentUser, signOut } from "@/features/auth/api/auth-api";
 import type { AuthSession } from "@/features/auth/types";
+import { authSessionExpiredEvent } from "@/lib/http";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -22,12 +19,7 @@ type AuthContextValue = {
 const AuthContext = React.createContext<AuthContextValue | null>(null);
 
 async function resolveSession() {
-  try {
-    return await getCurrentUser();
-  } catch {
-    await refreshSession();
-    return getCurrentUser();
-  }
+  return getCurrentUser();
 }
 
 type AuthProviderProps = {
@@ -68,6 +60,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   React.useEffect(() => {
     refresh();
   }, [refresh]);
+
+  React.useEffect(() => {
+    function handleSessionExpired() {
+      setUser(null);
+      setStatus("unauthenticated");
+    }
+
+    window.addEventListener(authSessionExpiredEvent, handleSessionExpired);
+
+    return () => {
+      window.removeEventListener(authSessionExpiredEvent, handleSessionExpired);
+    };
+  }, []);
 
   const value = React.useMemo<AuthContextValue>(
     () => ({

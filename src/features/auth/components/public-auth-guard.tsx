@@ -6,25 +6,25 @@ import * as React from "react";
 import { useAuthSession } from "@/features/auth/components/auth-provider";
 import { routes } from "@/lib/routes";
 
-type AuthGuardProps = {
+type PublicAuthGuardProps = {
   children: React.ReactNode;
   redirectTo?: string;
 };
 
-export function AuthGuard({
+export function PublicAuthGuard({
   children,
-  redirectTo = routes.onboarding,
-}: AuthGuardProps) {
+  redirectTo = routes.dashboard,
+}: PublicAuthGuardProps) {
   const router = useRouter();
   const { status } = useAuthSession();
 
   React.useEffect(() => {
-    if (status === "unauthenticated") {
+    if (status === "authenticated") {
       router.replace(redirectTo);
     }
   }, [redirectTo, router, status]);
 
-  if (status !== "authenticated") {
+  if (status === "loading" || status === "authenticated") {
     return null;
   }
 
