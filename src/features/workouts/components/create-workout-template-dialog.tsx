@@ -14,22 +14,21 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useWorkoutPlans } from "@/features/workouts/components/workout-plans-provider";
 import { getApiErrorMessage } from "@/lib/http";
 
-type CreateWorkoutPlanDialogProps = {
+type CreateWorkoutTemplateDialogProps = {
   children: React.ReactNode;
-  onCreated?: () => void | Promise<void>;
+  isSubmitting?: boolean;
+  onCreate: (name: string) => Promise<void>;
 };
 
-export function CreateWorkoutPlanDialog({
+export function CreateWorkoutTemplateDialog({
   children,
-  onCreated,
-}: CreateWorkoutPlanDialogProps) {
-  const { createPlan } = useWorkoutPlans();
+  isSubmitting = false,
+  onCreate,
+}: CreateWorkoutTemplateDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [error, setError] = React.useState("");
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,20 +38,15 @@ export function CreateWorkoutPlanDialog({
     const name = String(formData.get("name") ?? "").trim();
 
     if (!name) {
-      setError("Informe um nome para o plano.");
+      setError("Informe um nome para o treino.");
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      await createPlan({ name });
-      await onCreated?.();
+      await onCreate(name);
       setOpen(false);
     } catch (error) {
       setError(getApiErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -61,9 +55,9 @@ export function CreateWorkoutPlanDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo plano de treino</DialogTitle>
+          <DialogTitle>Novo treino</DialogTitle>
           <DialogDescription>
-            Dê um nome simples para organizar seus treinos.
+            Crie um treino dentro deste plano.
           </DialogDescription>
         </DialogHeader>
 
@@ -78,11 +72,11 @@ export function CreateWorkoutPlanDialog({
           ) : null}
 
           <div className="grid gap-2">
-            <Label htmlFor="workout-plan-name">Nome do plano</Label>
+            <Label htmlFor="workout-template-name">Nome do treino</Label>
             <Input
-              id="workout-plan-name"
+              id="workout-template-name"
               name="name"
-              placeholder="Ex: Hipertrofia ABC"
+              placeholder="Ex: Peito e tríceps"
               autoComplete="off"
               disabled={isSubmitting}
             />
@@ -98,7 +92,7 @@ export function CreateWorkoutPlanDialog({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Criando..." : "Criar plano"}
+              {isSubmitting ? "Criando..." : "Criar treino"}
             </Button>
           </DialogFooter>
         </form>

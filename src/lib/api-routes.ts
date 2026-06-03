@@ -14,7 +14,14 @@ export const apiRoutes = {
     sendCode: "/api/users/send-code",
   },
   exercises: {
-    list: "/api/exercises",
+    list: (page: number, perPage: number) =>
+      `/api/exercises?page=${page}&per_page=${perPage}`,
+    byEquipment: (equipment: string, page: number, perPage: number) =>
+      `/api/exercises/equipment/${equipment}?page=${page}&per_page=${perPage}`,
+    byMuscleGroup: (muscleGroup: string, page: number, perPage: number) =>
+      `/api/exercises/muscle-group/${muscleGroup}?page=${page}&per_page=${perPage}`,
+    byType: (exerciseType: string, page: number, perPage: number) =>
+      `/api/exercises/type/${exerciseType}?page=${page}&per_page=${perPage}`,
   },
   measurements: {
     list: "/api/measurements",
@@ -22,8 +29,17 @@ export const apiRoutes = {
   workoutPlans: {
     list: "/api/workout-plans",
     create: "/api/workout-plans",
+    changeName: "/api/workout-plans/change-name",
+    current: "/api/workout-plans/current",
+    byId: (workoutPlanId: string) => `/api/workout-plans/${workoutPlanId}`,
+    addTemplate: (workoutPlanId: string, workoutTemplateId: string) =>
+      `/api/workout-plans/${workoutPlanId}/workout-template/${workoutTemplateId}`,
+    setCurrent: (workoutPlanId: string) =>
+      `/api/workout-plans/${workoutPlanId}/current`,
   },
   workoutTemplates: {
     list: "/api/workout-templates",
+    create: "/api/workout-templates",
+    byId: (workoutId: string) => `/api/workout-templates/${workoutId}`,
   },
 } as const;

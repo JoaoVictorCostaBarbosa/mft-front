@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { AppScreen } from "@/components/app/app-screen";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,14 +10,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthSession } from "@/features/auth";
 import { useDashboardData } from "@/features/dashboard/hooks/use-dashboard-data";
 import { CreateWorkoutPlanDialog } from "@/features/workouts";
+import { routes } from "@/lib/routes";
 
 const weekDays = ["S", "T", "Q", "Q", "S", "S", "D"];
 
 export function DashboardScreen() {
   const { user } = useAuthSession();
   const { data, error, isLoading, refetch } = useDashboardData();
-  const activePlan = data?.workoutPlans[0];
-  const activeTemplate = data?.workoutTemplates[0];
+  const activePlan = data?.currentWorkoutPlan;
+  const activeTemplate = activePlan?.templates[0];
+  const hasWorkoutPlans = Boolean(data?.workoutPlans.length);
 
   return (
     <AppScreen>
@@ -53,13 +57,19 @@ export function DashboardScreen() {
                     Treino de hoje
                   </span>
                   <CardTitle className="text-xl">
-                    {activeTemplate?.name ?? activePlan?.name ?? "Nenhum treino definido"}
+                    {activeTemplate?.name ??
+                      activePlan?.name ??
+                      (hasWorkoutPlans
+                        ? "Escolha seu plano atual"
+                        : "Nenhum treino definido")}
                   </CardTitle>
                   <CardDescription>
                     {activeTemplate
                       ? "Ficha disponível para iniciar."
                       : activePlan
                         ? "Adicione fichas ao plano para começar."
+                        : hasWorkoutPlans
+                          ? "Defina um plano atual para destacar sua rotina."
                         : "Crie um plano para organizar sua rotina."}
                   </CardDescription>
                 </div>
@@ -68,6 +78,10 @@ export function DashboardScreen() {
               {activePlan || activeTemplate ? (
                 <Button className="h-12 w-full rounded-lg text-base">
                   Iniciar treino
+                </Button>
+              ) : hasWorkoutPlans ? (
+                <Button asChild className="h-12 w-full rounded-lg text-base">
+                  <Link href={routes.workouts}>Ver planos</Link>
                 </Button>
               ) : (
                 <CreateWorkoutPlanDialog onCreated={refetch}>
