@@ -1,5 +1,9 @@
-import { SignUpScreen } from "@/features/auth";
+import { PublicAuthGuard, SignUpScreen } from "@/features/auth";
 
 export default function SignUpPage() {
-  return <SignUpScreen />;
+  return (
+    <PublicAuthGuard>
+      <SignUpScreen />
+    </PublicAuthGuard>
+  );
 }
