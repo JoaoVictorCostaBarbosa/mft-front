@@ -1,11 +1,16 @@
 export {
   addExerciseToWorkoutSession,
   addSetToWorkoutSession,
+  cancelWorkoutSession,
   createWorkoutSession,
+  deleteWorkoutSessionSet,
   finishWorkoutSession,
   getCurrentWorkoutSession,
   getWorkoutSessionHistory,
   getWorkoutSessionWeeklySummary,
+  removeExerciseFromWorkoutSession,
+  reorderWorkoutSessionExercises,
+  updateWorkoutSessionSet,
 } from "./api/workout-sessions-api";
 export {
   ActiveWorkoutProvider,
@@ -17,8 +22,11 @@ export type {
   CreateWorkoutSessionRequest,
   CreateWorkoutSessionSetRequest,
   CurrentWorkoutSession,
+  CurrentWorkoutSessionExercise,
   FinishedWorkoutSession,
   FinishWorkoutSessionRequest,
+  ReorderWorkoutSessionExercisesRequest,
+  UpdateWorkoutSessionSetRequest,
   WorkoutSession,
   WorkoutSessionExercise,
   WorkoutSessionHistoryItem,

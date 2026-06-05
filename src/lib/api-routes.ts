@@ -54,10 +54,17 @@ export const apiRoutes = {
   workoutSessions: {
     create: "/api/workout-sessions",
     current: "/api/workout-sessions/current",
+    cancel: (sessionId: string) => `/api/workout-sessions/${sessionId}`,
     finish: (sessionId: string) => `/api/workout-sessions/${sessionId}/finish`,
     exercises: (sessionId: string) =>
       `/api/workout-sessions/${sessionId}/exercises`,
+    exercise: (sessionId: string, sessionExerciseId: string) =>
+      `/api/workout-sessions/${sessionId}/exercises/${sessionExerciseId}`,
+    reorderExercises: (sessionId: string) =>
+      `/api/workout-sessions/${sessionId}/exercises/reorder`,
     sets: (sessionId: string) => `/api/workout-sessions/${sessionId}/sets`,
+    set: (sessionId: string, setId: string) =>
+      `/api/workout-sessions/${sessionId}/sets/${setId}`,
     history: "/api/workout-sessions/history",
     weeklySummary: (startDate: string, endDate: string) =>
       `/api/workout-sessions/weekly-summary?start_date=${startDate}&end_date=${endDate}`,
