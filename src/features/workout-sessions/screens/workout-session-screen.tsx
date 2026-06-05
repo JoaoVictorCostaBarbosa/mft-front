@@ -5,6 +5,7 @@ import {
   Check,
   Clock3,
   Dumbbell,
+  Loader2,
   Plus,
   SlidersHorizontal,
 } from "lucide-react";
@@ -58,6 +59,7 @@ import type {
 } from "@/features/workouts/types";
 import { ApiError, getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type SessionExercise = Exercise & {
   savedSets: LoggedSet[];
@@ -572,8 +574,8 @@ function AddSessionExerciseDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3 overflow-hidden">
-          <div className="flex gap-2">
+        <div className="grid gap-3 overflow-visible">
+          <div className="flex gap-2 px-0.5">
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -665,22 +667,37 @@ function AddSessionExerciseDialog({
               </p>
             ) : null}
 
-            {visibleExercises.map((exercise) => (
-              <button
-                key={exercise.id}
-                type="button"
-                className="grid rounded-md border border-border p-3 text-left transition-colors hover:bg-secondary"
-                disabled={Boolean(addingExerciseId)}
-                onClick={() => void handleAdd(exercise)}
-              >
-                <span className="text-sm font-semibold text-foreground">
-                  {exercise.name}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {exercise.muscle_group} · {exercise.equipment}
-                </span>
-              </button>
-            ))}
+            {visibleExercises.map((exercise) => {
+              const isAdding = addingExerciseId === exercise.id;
+
+              return (
+                <button
+                  key={exercise.id}
+                  type="button"
+                  aria-busy={isAdding}
+                  className={cn(
+                    "grid rounded-md border border-border p-3 text-left transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70",
+                    isAdding &&
+                      "border-primary/60 bg-primary/10 text-primary opacity-100",
+                  )}
+                  disabled={Boolean(addingExerciseId)}
+                  onClick={() => void handleAdd(exercise)}
+                >
+                  <span className="flex items-center justify-between gap-3 text-sm font-semibold text-foreground">
+                    <span>{exercise.name}</span>
+                    {isAdding ? (
+                      <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-primary">
+                        <Loader2 className="size-3.5 animate-spin" />
+                        Adicionando
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {exercise.muscle_group} · {exercise.equipment}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
