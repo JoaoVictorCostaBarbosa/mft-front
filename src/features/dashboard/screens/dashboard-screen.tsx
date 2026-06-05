@@ -102,7 +102,10 @@ export function DashboardScreen() {
     setIsSessionActionLoading(true);
 
     try {
-      await createWorkoutSession({});
+      await createWorkoutSession({
+        workout_plan_id: null,
+        workout_template_id: null,
+      });
       toast({
         title: "Treino avulso iniciado",
         description: "Adicione exercícios para registrar suas séries.",
