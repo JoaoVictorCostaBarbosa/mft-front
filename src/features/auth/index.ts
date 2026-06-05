@@ -1,3 +1,4 @@
+export { AuthEntryRedirect } from "./components/auth-entry-redirect";
 export { AuthGuard } from "./components/auth-guard";
 export { AuthProvider, useAuthSession } from "./components/auth-provider";
 export { PublicAuthGuard } from "./components/public-auth-guard";

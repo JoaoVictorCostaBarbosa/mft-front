@@ -7,6 +7,7 @@ import * as React from "react";
 import { AuthField } from "@/features/auth/components/auth-field";
 import { AuthFormLayout } from "@/features/auth/components/auth-form-layout";
 import { signIn } from "@/features/auth/api/auth-api";
+import { markAuthEntrySeen } from "@/features/auth/lib/auth-entry-storage";
 import { ApiError, getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
 import { useAuthSession } from "@/features/auth";
@@ -16,6 +17,10 @@ export function SignInScreen() {
   const { setAuthenticatedUser } = useAuthSession();
   const [error, setError] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    markAuthEntrySeen();
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,6 +34,7 @@ export function SignInScreen() {
         email: String(formData.get("email") ?? ""),
         password: String(formData.get("password") ?? ""),
       });
+      markAuthEntrySeen();
       setAuthenticatedUser(session.user);
       router.push(routes.dashboard);
     } catch (error) {

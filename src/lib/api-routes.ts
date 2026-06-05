@@ -32,6 +32,12 @@ export const apiRoutes = {
     changeName: "/api/workout-plans/change-name",
     current: "/api/workout-plans/current",
     byId: (workoutPlanId: string) => `/api/workout-plans/${workoutPlanId}`,
+    addRoutineItem: (workoutPlanId: string) =>
+      `/api/workout-plans/${workoutPlanId}/routine-items`,
+    nextRoutineItem: (workoutPlanId: string) =>
+      `/api/workout-plans/${workoutPlanId}/next-routine-item`,
+    routineItem: (workoutPlanId: string, routineItemId: string) =>
+      `/api/workout-plans/${workoutPlanId}/routine-items/${routineItemId}`,
     addTemplate: (workoutPlanId: string, workoutTemplateId: string) =>
       `/api/workout-plans/${workoutPlanId}/workout-template/${workoutTemplateId}`,
     setCurrent: (workoutPlanId: string) =>
@@ -40,6 +46,20 @@ export const apiRoutes = {
   workoutTemplates: {
     list: "/api/workout-templates",
     create: "/api/workout-templates",
+    addExercise: "/api/workout-templates/add-exercise",
+    changeName: "/api/workout-templates/change-name",
+    removeExercise: "/api/workout-templates/remove-exercise",
     byId: (workoutId: string) => `/api/workout-templates/${workoutId}`,
+  },
+  workoutSessions: {
+    create: "/api/workout-sessions",
+    current: "/api/workout-sessions/current",
+    finish: (sessionId: string) => `/api/workout-sessions/${sessionId}/finish`,
+    exercises: (sessionId: string) =>
+      `/api/workout-sessions/${sessionId}/exercises`,
+    sets: (sessionId: string) => `/api/workout-sessions/${sessionId}/sets`,
+    history: "/api/workout-sessions/history",
+    weeklySummary: (startDate: string, endDate: string) =>
+      `/api/workout-sessions/weekly-summary?start_date=${startDate}&end_date=${endDate}`,
   },
 } as const;

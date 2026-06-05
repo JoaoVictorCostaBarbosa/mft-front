@@ -14,7 +14,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useWorkoutPlans } from "@/features/workouts/components/workout-plans-provider";
+import { routineModeLabels } from "@/features/workouts/constants";
+import type { RoutineMode } from "@/features/workouts/types";
 import { getApiErrorMessage } from "@/lib/http";
 
 type CreateWorkoutPlanDialogProps = {
@@ -30,6 +39,16 @@ export function CreateWorkoutPlanDialog({
   const [open, setOpen] = React.useState(false);
   const [error, setError] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [routineMode, setRoutineMode] = React.useState<RoutineMode>("weekly");
+
+  function handleOpenChange(isOpen: boolean) {
+    setOpen(isOpen);
+    setError("");
+
+    if (!isOpen) {
+      setRoutineMode("weekly");
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,7 +65,7 @@ export function CreateWorkoutPlanDialog({
     setIsSubmitting(true);
 
     try {
-      await createPlan({ name });
+      await createPlan({ name, routine_mode: routineMode });
       await onCreated?.();
       setOpen(false);
     } catch (error) {
@@ -57,7 +76,7 @@ export function CreateWorkoutPlanDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -86,6 +105,29 @@ export function CreateWorkoutPlanDialog({
               autoComplete="off"
               disabled={isSubmitting}
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Modo da rotina</Label>
+            <Select
+              value={routineMode}
+              onValueChange={(value) => setRoutineMode(value as RoutineMode)}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o modo" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(routineModeLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Semanal usa dias da semana. Sequencial segue a ordem dos itens.
+            </p>
           </div>
 
           <DialogFooter>

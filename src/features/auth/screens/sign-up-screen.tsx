@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { signUp, verifyAccount } from "@/features/auth/api/auth-api";
 import { AuthField } from "@/features/auth/components/auth-field";
 import { AuthFormLayout } from "@/features/auth/components/auth-form-layout";
+import { markAuthEntrySeen } from "@/features/auth/lib/auth-entry-storage";
 import { Button } from "@/components/ui/button";
-import { getApiErrorMessage } from "@/lib/http";
+import { ApiError, getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
 import { useAuthSession } from "@/features/auth";
 
@@ -18,6 +19,10 @@ export function SignUpScreen() {
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    markAuthEntrySeen();
+  }, []);
 
   function validatePassword(password: string): string | null {
     if (password.length < 8) {
@@ -61,7 +66,11 @@ export function SignUpScreen() {
       setEmailToVerify(email);
       setSuccess("Enviamos um código de 6 dígitos para o seu e-mail.");
     } catch (error) {
-      setError(getApiErrorMessage(error));
+      setError(
+        error instanceof ApiError && error.status === 409
+          ? "Este e-mail já está em uso."
+          : getApiErrorMessage(error),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -81,6 +90,7 @@ export function SignUpScreen() {
         email: emailToVerify,
         code,
       });
+      markAuthEntrySeen();
       setAuthenticatedUser(session.user);
       router.push(routes.dashboard);
     } catch (error) {

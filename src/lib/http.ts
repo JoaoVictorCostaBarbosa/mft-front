@@ -26,10 +26,6 @@ export function getApiErrorMessage(error: unknown) {
       return "Sua sessão expirou. Entre novamente.";
     }
 
-    if (error.status === 409) {
-      return "Este e-mail já está em uso.";
-    }
-
     if (error.status >= 500) {
       return "Erro inesperado. Tente novamente mais tarde.";
     }

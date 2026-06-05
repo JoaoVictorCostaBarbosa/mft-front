@@ -27,44 +27,34 @@ import { ApiError, getApiErrorMessage } from "@/lib/http";
 
 const defaultDayOfWeek: DayOfWeek = "sunday";
 
-type CreateWorkoutTemplateDialogProps = {
+type CreateRoutineRestDialogProps = {
   children: React.ReactNode;
   isSubmitting?: boolean;
   nextPosition?: number;
   onCreate: (
-    payload:
-      | { dayOfWeek: DayOfWeek; name: string }
-      | { name: string; position: number },
+    payload: { dayOfWeek: DayOfWeek } | { position: number },
   ) => Promise<void>;
   routineMode: RoutineMode;
 };
 
-export function CreateWorkoutTemplateDialog({
+export function CreateRoutineRestDialog({
   children,
   isSubmitting = false,
   nextPosition = 1,
   onCreate,
   routineMode,
-}: CreateWorkoutTemplateDialogProps) {
+}: CreateRoutineRestDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [error, setError] = React.useState("");
   const [dayOfWeek, setDayOfWeek] =
     React.useState<DayOfWeek>(defaultDayOfWeek);
   const [position, setPosition] = React.useState(nextPosition);
-  const formRef = React.useRef<HTMLFormElement>(null);
 
   function resetForm() {
-    formRef.current?.reset();
     setDayOfWeek(defaultDayOfWeek);
     setPosition(nextPosition);
     setError("");
   }
-
-  React.useEffect(() => {
-    if (open) {
-      setPosition(nextPosition);
-    }
-  }, [nextPosition, open]);
 
   function handleOpenChange(isOpen: boolean) {
     setOpen(isOpen);
@@ -75,17 +65,15 @@ export function CreateWorkoutTemplateDialog({
     }
   }
 
+  React.useEffect(() => {
+    if (open) {
+      setPosition(nextPosition);
+    }
+  }, [nextPosition, open]);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-
-    const formData = new FormData(event.currentTarget);
-    const name = String(formData.get("name") ?? "").trim();
-
-    if (!name) {
-      setError("Informe um nome para o treino.");
-      return;
-    }
 
     if (routineMode === "sequential" && position < 1) {
       setError("Informe uma posição válida.");
@@ -94,14 +82,12 @@ export function CreateWorkoutTemplateDialog({
 
     try {
       await onCreate(
-        routineMode === "weekly"
-          ? { dayOfWeek, name }
-          : { name, position },
+        routineMode === "weekly" ? { dayOfWeek } : { position },
       );
       resetForm();
       setOpen(false);
     } catch (error) {
-      setError(getCreateWorkoutTemplateErrorMessage(error, routineMode));
+      setError(getCreateRestErrorMessage(error, routineMode));
     }
   }
 
@@ -110,13 +96,13 @@ export function CreateWorkoutTemplateDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo treino</DialogTitle>
+          <DialogTitle>Novo descanso</DialogTitle>
           <DialogDescription>
-            Crie um treino dentro deste plano.
+            Adicione um dia ou posição de descanso à rotina.
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} className="grid gap-4" onSubmit={handleSubmit}>
+        <form className="grid gap-4" onSubmit={handleSubmit}>
           {error ? (
             <div
               role="alert"
@@ -125,17 +111,6 @@ export function CreateWorkoutTemplateDialog({
               {error}
             </div>
           ) : null}
-
-          <div className="grid gap-2">
-            <Label htmlFor="workout-template-name">Nome do treino</Label>
-            <Input
-              id="workout-template-name"
-              name="name"
-              placeholder="Ex: Peito e tríceps"
-              autoComplete="off"
-              disabled={isSubmitting}
-            />
-          </div>
 
           {routineMode === "weekly" ? (
             <div className="grid gap-2">
@@ -159,9 +134,9 @@ export function CreateWorkoutTemplateDialog({
             </div>
           ) : (
             <div className="grid gap-2">
-              <Label htmlFor="workout-template-position">Posição</Label>
+              <Label htmlFor="routine-rest-position">Posição</Label>
               <Input
-                id="workout-template-position"
+                id="routine-rest-position"
                 type="number"
                 min={1}
                 value={position}
@@ -183,7 +158,7 @@ export function CreateWorkoutTemplateDialog({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Criando..." : "Criar treino"}
+              {isSubmitting ? "Criando..." : "Criar descanso"}
             </Button>
           </DialogFooter>
         </form>
@@ -192,10 +167,7 @@ export function CreateWorkoutTemplateDialog({
   );
 }
 
-function getCreateWorkoutTemplateErrorMessage(
-  error: unknown,
-  routineMode: RoutineMode,
-) {
+function getCreateRestErrorMessage(error: unknown, routineMode: RoutineMode) {
   if (error instanceof ApiError && error.status === 409) {
     return routineMode === "weekly"
       ? "Já existe um item para este dia."
