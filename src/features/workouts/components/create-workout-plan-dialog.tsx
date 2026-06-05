@@ -126,7 +126,9 @@ export function CreateWorkoutPlanDialog({
               </SelectContent>
             </Select>
             <p className="text-xs leading-5 text-muted-foreground">
-              Semanal usa dias da semana. Sequencial segue a ordem dos itens.
+              {routineMode === "weekly"
+                ? "Semanal usa dias da semana."
+                : "Sequencial segue a ordem dos itens."}
             </p>
           </div>
 

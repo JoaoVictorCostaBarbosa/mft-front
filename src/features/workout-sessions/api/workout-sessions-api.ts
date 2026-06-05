@@ -5,6 +5,8 @@ import type {
   CurrentWorkoutSession,
   FinishedWorkoutSession,
   FinishWorkoutSessionRequest,
+  ReorderWorkoutSessionExercisesRequest,
+  UpdateWorkoutSessionSetRequest,
   WorkoutSession,
   WorkoutSessionExercise,
   WorkoutSessionHistoryResponse,
@@ -38,6 +40,12 @@ export function finishWorkoutSession(
   );
 }
 
+export function cancelWorkoutSession(sessionId: string) {
+  return apiFetch<void>(apiRoutes.workoutSessions.cancel(sessionId), {
+    method: "DELETE",
+  });
+}
+
 export function addExerciseToWorkoutSession(
   sessionId: string,
   payload: AddWorkoutSessionExerciseRequest,
@@ -51,6 +59,28 @@ export function addExerciseToWorkoutSession(
   );
 }
 
+export function removeExerciseFromWorkoutSession(
+  sessionId: string,
+  sessionExerciseId: string,
+) {
+  return apiFetch<void>(
+    apiRoutes.workoutSessions.exercise(sessionId, sessionExerciseId),
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+export function reorderWorkoutSessionExercises(
+  sessionId: string,
+  payload: ReorderWorkoutSessionExercisesRequest,
+) {
+  return apiFetch<void>(apiRoutes.workoutSessions.reorderExercises(sessionId), {
+    method: "PATCH",
+    body: payload,
+  });
+}
+
 export function addSetToWorkoutSession(
   sessionId: string,
   payload: CreateWorkoutSessionSetRequest,
@@ -58,6 +88,26 @@ export function addSetToWorkoutSession(
   return apiFetch<WorkoutSessionSet>(apiRoutes.workoutSessions.sets(sessionId), {
     method: "POST",
     body: payload,
+  });
+}
+
+export function updateWorkoutSessionSet(
+  sessionId: string,
+  setId: string,
+  payload: UpdateWorkoutSessionSetRequest,
+) {
+  return apiFetch<WorkoutSessionSet>(
+    apiRoutes.workoutSessions.set(sessionId, setId),
+    {
+      method: "PATCH",
+      body: payload,
+    },
+  );
+}
+
+export function deleteWorkoutSessionSet(sessionId: string, setId: string) {
+  return apiFetch<void>(apiRoutes.workoutSessions.set(sessionId, setId), {
+    method: "DELETE",
   });
 }
 

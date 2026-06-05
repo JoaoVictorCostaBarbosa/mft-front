@@ -342,8 +342,8 @@ function AddTemplateExerciseDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3 overflow-hidden">
-          <div className="flex gap-2">
+        <div className="grid gap-3 overflow-visible">
+          <div className="flex gap-2 px-0.5">
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}

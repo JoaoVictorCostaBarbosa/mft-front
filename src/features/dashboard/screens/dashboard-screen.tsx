@@ -62,6 +62,12 @@ export function DashboardScreen() {
   const isSequentialPlan = activePlan?.routine_mode === "sequential";
   const hasWorkoutPlans = Boolean(data?.workoutPlans.length);
   const todayLabel = todayDayOfWeek ? dayOfWeekLabels[todayDayOfWeek] : "hoje";
+  const hasTrainedToday = Boolean(
+    todayDayOfWeek &&
+      data?.weeklySummary.days.some(
+        (day) => day.day_of_week === todayDayOfWeek && day.trained,
+      ),
+  );
   const trainedDays = React.useMemo(
     () =>
       new Set(
@@ -134,7 +140,9 @@ export function DashboardScreen() {
           Olá, {user?.name ?? "User"}
         </h1>
         <p className="text-sm leading-6 text-muted-foreground">
-          Pronto para o treino de hoje?
+          {hasTrainedToday
+            ? "Treino de hoje concluído. Bom trabalho."
+            : "Pronto para o treino de hoje?"}
         </p>
       </header>
 
@@ -179,6 +187,8 @@ export function DashboardScreen() {
                   <CardDescription>
                     {currentSession
                       ? `Em andamento desde ${formatTime(currentSession.started_at)}.`
+                      : hasTrainedToday
+                        ? "Você já registrou treino hoje."
                       : activeTemplate
                       ? isSequentialPlan
                         ? "Próximo treino disponível na sequência."

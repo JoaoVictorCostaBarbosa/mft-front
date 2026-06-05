@@ -58,7 +58,7 @@ export async function apiFetch<TResponse>(
   const response = await fetch(url, requestInit);
 
   if (
-    response.status === 401 &&
+    shouldAttemptAuthRefreshForResponse(response.status) &&
     !skipAuthRefresh &&
     shouldAttemptAuthRefresh(path)
   ) {
@@ -102,6 +102,10 @@ async function requestAccessTokenRefresh() {
 
     throw await createApiError(response);
   }
+}
+
+function shouldAttemptAuthRefreshForResponse(status: number) {
+  return status === 401 || status === 403 || status === 419;
 }
 
 function shouldAttemptAuthRefresh(path: string) {
