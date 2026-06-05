@@ -2,24 +2,26 @@
 
 import * as React from "react";
 
-import { getExercises } from "@/features/workouts/api/exercises-api";
+import { useExerciseCatalog } from "@/features/workouts/components/exercises-provider";
 import type {
   Equipment,
   Exercise,
   ExerciseType,
   MuscleGroup,
 } from "@/features/workouts/types";
-import { getApiErrorMessage } from "@/lib/http";
 
 const exercisesPerPage = 20;
+const emptyFilters: ExerciseFilters = {};
 
 export type ExerciseFilters = {
   equipment?: Equipment;
   exerciseType?: ExerciseType;
   muscleGroup?: MuscleGroup;
+  query?: string;
 };
 
 type ExercisesState = {
+  allExercises: Exercise[] | null;
   error: string;
   hasNext: boolean;
   hasPrevious: boolean;
@@ -33,62 +35,85 @@ type ExercisesState = {
   totalPages: number;
 };
 
-export function useExercises(filters: ExerciseFilters = {}): ExercisesState {
-  const [exercises, setExercises] = React.useState<Exercise[] | null>(null);
-  const [error, setError] = React.useState("");
-  const [isLoading, setIsLoading] = React.useState(true);
+export function useExercises(
+  filters: ExerciseFilters = emptyFilters,
+): ExercisesState {
+  const {
+    error,
+    exercises: catalogExercises,
+    isLoading,
+    refetchExercises,
+  } = useExerciseCatalog();
   const [page, setPage] = React.useState(1);
-  const [perPage, setPerPage] = React.useState(exercisesPerPage);
-  const [total, setTotal] = React.useState(0);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const [hasNext, setHasNext] = React.useState(false);
-  const [hasPrevious, setHasPrevious] = React.useState(false);
+  const normalizedQuery = normalize(filters.query ?? "");
 
-  const fetchExercises = React.useCallback(async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const exercisePage = await getExercises({
-        page,
-        perPage: exercisesPerPage,
-        ...filters,
-      });
-      setExercises(
-        [...exercisePage.items].sort((firstExercise, secondExercise) =>
-          firstExercise.name.localeCompare(secondExercise.name, "pt-BR", {
-            sensitivity: "base",
-          }),
-        ),
-      );
-      setPage(exercisePage.pagination.currentPage);
-      setPerPage(exercisePage.pagination.itemsPerPage);
-      setTotal(exercisePage.pagination.totalItems);
-      setTotalPages(exercisePage.pagination.totalPages);
-      setHasNext(exercisePage.pagination.hasNext);
-      setHasPrevious(exercisePage.pagination.hasPrevious);
-    } catch (error) {
-      setError(getApiErrorMessage(error));
-    } finally {
-      setIsLoading(false);
+  const filteredExercises = React.useMemo(() => {
+    if (!catalogExercises) {
+      return null;
     }
-  }, [filters, page]);
+
+    return catalogExercises.filter(
+      (exercise) =>
+        (!normalizedQuery || normalize(exercise.name).includes(normalizedQuery)) &&
+        (!filters.equipment || exercise.equipment === filters.equipment) &&
+        (!filters.exerciseType ||
+          exercise.exercise_type === filters.exerciseType) &&
+        (!filters.muscleGroup || exercise.muscle_group === filters.muscleGroup),
+    );
+  }, [
+    catalogExercises,
+    filters.equipment,
+    filters.exerciseType,
+    filters.muscleGroup,
+    normalizedQuery,
+  ]);
+  const total = filteredExercises?.length ?? 0;
+  const totalPages = Math.max(Math.ceil(total / exercisesPerPage), 1);
+  const safePage = Math.min(page, totalPages);
+  const visibleExercises = React.useMemo(() => {
+    if (!filteredExercises) {
+      return null;
+    }
+
+    const startIndex = (safePage - 1) * exercisesPerPage;
+
+    return filteredExercises.slice(startIndex, startIndex + exercisesPerPage);
+  }, [filteredExercises, safePage]);
 
   React.useEffect(() => {
-    fetchExercises();
-  }, [fetchExercises]);
+    setPage(1);
+  }, [
+    filters.equipment,
+    filters.exerciseType,
+    filters.muscleGroup,
+    normalizedQuery,
+  ]);
+
+  React.useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return {
+    allExercises: filteredExercises,
     error,
-    hasNext,
-    hasPrevious,
-    exercises,
+    hasNext: safePage < totalPages,
+    hasPrevious: safePage > 1,
+    exercises: visibleExercises,
     isLoading,
-    page,
-    perPage,
-    refetch: fetchExercises,
+    page: safePage,
+    perPage: exercisesPerPage,
+    refetch: refetchExercises,
     setPage,
     total,
     totalPages,
   };
+}
+
+function normalize(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }

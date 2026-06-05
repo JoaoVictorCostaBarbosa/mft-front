@@ -142,8 +142,9 @@ export function ExerciseLibraryScreen() {
         muscleGroup === allFilterValue
           ? undefined
           : (muscleGroup as MuscleGroup),
+      query,
     }),
-    [equipment, exerciseType, muscleGroup],
+    [equipment, exerciseType, muscleGroup, query],
   );
   const {
     error,
@@ -158,19 +159,6 @@ export function ExerciseLibraryScreen() {
     total,
     totalPages,
   } = useExercises(activeFilters);
-
-  const filteredExercises = React.useMemo(() => {
-    if (!exercises) {
-      return null;
-    }
-
-    const normalizedQuery = normalize(query);
-
-    return exercises.filter(
-      (exercise) =>
-        !normalizedQuery || normalize(exercise.name).includes(normalizedQuery),
-    );
-  }, [exercises, query]);
 
   return (
     <AppScreen>
@@ -309,7 +297,7 @@ export function ExerciseLibraryScreen() {
         />
       ) : null}
 
-      {!isLoading && !error && filteredExercises?.length === 0 ? (
+      {!isLoading && !error && exercises?.length === 0 ? (
         <EmptyState
           title="Nenhum exercício encontrado"
           description="Ajuste os filtros para ver outros exercícios."
@@ -321,13 +309,13 @@ export function ExerciseLibraryScreen() {
         />
       ) : null}
 
-      {!error && filteredExercises?.length ? (
+      {!error && exercises?.length ? (
         <section className="grid gap-2">
           <p className="text-xs text-muted-foreground">
             Mostrando {getVisibleRange(page, perPage, total)} de {total} · pág.{" "}
             {page} de {totalPages}
           </p>
-          {filteredExercises.map((exercise) => (
+          {exercises.map((exercise) => (
             <ExerciseCard key={exercise.id} exercise={exercise} />
           ))}
           <ExercisePagination
@@ -533,14 +521,6 @@ function renderExerciseIcon(exercise: Exercise) {
   }
 
   return <Dumbbell className="size-5" />;
-}
-
-function normalize(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
 }
 
 function getEquipmentLabel(equipment: Equipment) {

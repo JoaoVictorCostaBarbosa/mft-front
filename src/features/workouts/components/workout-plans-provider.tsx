@@ -102,6 +102,7 @@ export function WorkoutPlansProvider({ children }: WorkoutPlansProviderProps) {
         id: createdPlan.id,
         user_id: createdPlan.user_id,
         name: createdPlan.name,
+        routine_mode: createdPlan.routine_mode,
       };
 
       setPlans((currentPlans) => [planSummary, ...(currentPlans ?? [])]);
@@ -206,5 +207,6 @@ function getPlanSummary(plan: WorkoutPlan): WorkoutPlanSummary {
     id: plan.id,
     user_id: plan.user_id,
     name: plan.name,
+    routine_mode: plan.routine_mode,
   };
 }

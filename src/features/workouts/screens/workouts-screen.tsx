@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CreateWorkoutPlanDialog,
+  routineModeLabels,
   WorkoutPlanActions,
   useWorkoutPlans,
 } from "@/features/workouts";
@@ -121,7 +122,7 @@ export function WorkoutsScreen() {
                       {currentPlan.name}
                     </h2>
                     <p className="text-xs text-muted-foreground">
-                      Plano de treino
+                      Rotina {routineModeLabels[currentPlan.routine_mode].toLowerCase()}
                     </p>
                   </div>
                 </Link>
@@ -146,7 +147,7 @@ export function WorkoutsScreen() {
                           {plan.name}
                         </h2>
                         <p className="text-xs text-muted-foreground">
-                          Plano de treino
+                          Rotina {routineModeLabels[plan.routine_mode].toLowerCase()}
                         </p>
                       </div>
                     </Link>

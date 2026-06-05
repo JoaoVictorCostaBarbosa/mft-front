@@ -1,7 +1,10 @@
 import type {
+  AddRoutineItemRequest,
   CreateWorkoutPlanRequest,
+  UpdateRoutineItemRequest,
   UpdateWorkoutPlanNameRequest,
   WorkoutPlan,
+  WorkoutPlanRoutineItem,
   WorkoutPlanSummary,
 } from "@/features/workouts/types";
 import { apiRoutes } from "@/lib/api-routes";
@@ -47,6 +50,48 @@ export function addTemplateToWorkoutPlan(
     apiRoutes.workoutPlans.addTemplate(workoutPlanId, workoutTemplateId),
     {
       method: "POST",
+    },
+  );
+}
+
+export function addRoutineItemToWorkoutPlan(
+  workoutPlanId: string,
+  payload: AddRoutineItemRequest,
+) {
+  return apiFetch<void>(apiRoutes.workoutPlans.addRoutineItem(workoutPlanId), {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function getNextRoutineItem(workoutPlanId: string) {
+  return apiFetch<WorkoutPlanRoutineItem>(
+    apiRoutes.workoutPlans.nextRoutineItem(workoutPlanId),
+  );
+}
+
+export function updateRoutineItemInWorkoutPlan(
+  workoutPlanId: string,
+  routineItemId: string,
+  payload: UpdateRoutineItemRequest,
+) {
+  return apiFetch<WorkoutPlanRoutineItem>(
+    apiRoutes.workoutPlans.routineItem(workoutPlanId, routineItemId),
+    {
+      method: "PATCH",
+      body: payload,
+    },
+  );
+}
+
+export function deleteRoutineItemFromWorkoutPlan(
+  workoutPlanId: string,
+  routineItemId: string,
+) {
+  return apiFetch<void>(
+    apiRoutes.workoutPlans.routineItem(workoutPlanId, routineItemId),
+    {
+      method: "DELETE",
     },
   );
 }
