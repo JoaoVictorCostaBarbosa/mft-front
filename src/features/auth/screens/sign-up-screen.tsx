@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { signUp, verifyAccount } from "@/features/auth/api/auth-api";
 import { AuthField } from "@/features/auth/components/auth-field";
 import { AuthFormLayout } from "@/features/auth/components/auth-form-layout";
+import { GoogleAuthButton } from "@/features/auth/components/google-auth-button";
 import { markAuthEntrySeen } from "@/features/auth/lib/auth-entry-storage";
+import type { AuthSession } from "@/features/auth/types";
 import { Button } from "@/components/ui/button";
 import { ApiError, getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
@@ -23,6 +25,15 @@ export function SignUpScreen() {
   React.useEffect(() => {
     markAuthEntrySeen();
   }, []);
+
+  const handleGoogleAuthenticated = React.useCallback(
+    (session: AuthSession) => {
+      markAuthEntrySeen();
+      setAuthenticatedUser(session.user);
+      router.push(routes.dashboard);
+    },
+    [router, setAuthenticatedUser],
+  );
 
   function validatePassword(password: string): string | null {
     if (password.length < 8) {
@@ -151,6 +162,13 @@ export function SignUpScreen() {
       success={success}
       isSubmitting={isSubmitting}
       onSubmit={handleSignUp}
+      socialAction={
+        <GoogleAuthButton
+          disabled={isSubmitting}
+          onAuthenticated={handleGoogleAuthenticated}
+          onError={setError}
+        />
+      }
     >
       <AuthField label="Nome" name="name" autoComplete="name" />
       <AuthField label="E-mail" name="email" type="email" autoComplete="email" />
