@@ -13,6 +13,10 @@ export type SignInCredentials = {
   password: string;
 };
 
+export type GoogleSignInRequest = {
+  id_token: string;
+};
+
 export type SignUpCredentials = {
   name: string;
   email: string;

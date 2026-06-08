@@ -6,6 +6,8 @@ import * as React from "react";
 
 import { AuthField } from "@/features/auth/components/auth-field";
 import { AuthFormLayout } from "@/features/auth/components/auth-form-layout";
+import { GoogleAuthButton } from "@/features/auth/components/google-auth-button";
+import type { AuthSession } from "@/features/auth/types";
 import { signIn } from "@/features/auth/api/auth-api";
 import { markAuthEntrySeen } from "@/features/auth/lib/auth-entry-storage";
 import { ApiError, getApiErrorMessage } from "@/lib/http";
@@ -21,6 +23,15 @@ export function SignInScreen() {
   React.useEffect(() => {
     markAuthEntrySeen();
   }, []);
+
+  const handleGoogleAuthenticated = React.useCallback(
+    (session: AuthSession) => {
+      markAuthEntrySeen();
+      setAuthenticatedUser(session.user);
+      router.push(routes.dashboard);
+    },
+    [router, setAuthenticatedUser],
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,6 +70,13 @@ export function SignInScreen() {
       error={error}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}
+      socialAction={
+        <GoogleAuthButton
+          disabled={isSubmitting}
+          onAuthenticated={handleGoogleAuthenticated}
+          onError={setError}
+        />
+      }
     >
       <AuthField label="E-mail" name="email" type="email" autoComplete="email" />
       <AuthField

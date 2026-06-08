@@ -1,5 +1,6 @@
 export const apiRoutes = {
   auth: {
+    google: "/api/auth/google",
     login: "/api/auth/login",
     logout: "/api/auth/logout",
     refresh: "/api/auth/refresh",

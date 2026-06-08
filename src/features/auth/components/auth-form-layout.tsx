@@ -18,6 +18,7 @@ type AuthFormLayoutProps = {
   isSubmitting?: boolean;
   onSubmit?: React.FormEventHandler<HTMLFormElement>;
   className?: string;
+  socialAction?: React.ReactNode;
 };
 
 export function AuthFormLayout({
@@ -33,6 +34,7 @@ export function AuthFormLayout({
   isSubmitting,
   onSubmit,
   className,
+  socialAction,
 }: AuthFormLayoutProps) {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center bg-background px-5 py-8">
@@ -79,16 +81,17 @@ export function AuthFormLayout({
           </Button>
         </form>
 
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          <span>ou</span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
+        {socialAction ? (
+          <>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              <span>ou</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
 
-        <Button type="button" variant="outline" className="h-11 gap-3 bg-background">
-          <span className="text-lg font-bold text-primary">G</span>
-          Continuar com Google
-        </Button>
+            {socialAction}
+          </>
+        ) : null}
 
         <p className="text-center text-sm text-muted-foreground">
           {footerText}{" "}

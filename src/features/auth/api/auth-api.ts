@@ -3,6 +3,7 @@ import { apiFetch } from "@/lib/http";
 
 import type {
   AuthSession,
+  GoogleSignInRequest,
   SignInCredentials,
   SignUpCredentials,
   VerifyAccountRequest,
@@ -12,6 +13,14 @@ export function signIn(credentials: SignInCredentials) {
   return apiFetch<AuthSession>(apiRoutes.auth.login, {
     method: "POST",
     body: credentials,
+    skipAuthRefresh: true,
+  });
+}
+
+export function signInWithGoogle(payload: GoogleSignInRequest) {
+  return apiFetch<AuthSession>(apiRoutes.auth.google, {
+    method: "POST",
+    body: payload,
     skipAuthRefresh: true,
   });
 }
