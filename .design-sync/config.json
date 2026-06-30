@@ -1,0 +1,33 @@
+{
+  "projectId": "c3c723c3-8151-46e4-a046-607953c33509",
+  "pkg": "mft-ui",
+  "globalName": "MFT",
+  "shape": "package",
+  "srcDir": "src/components",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".ds-sync/generated.css",
+  "runtimeFontPrefixes": ["Geist"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "componentSrcMap": {
+    "Badge": "src/components/ui/badge.tsx",
+    "Button": "src/components/ui/button.tsx",
+    "Card": "src/components/ui/card.tsx",
+    "Dialog": "src/components/ui/dialog.tsx",
+    "EmptyState": "src/components/ui/empty-state.tsx",
+    "ErrorState": "src/components/ui/error-state.tsx",
+    "Input": "src/components/ui/input.tsx",
+    "Label": "src/components/ui/label.tsx",
+    "LoadingState": "src/components/ui/loading-state.tsx",
+    "PageContainer": "src/components/ui/page-container.tsx",
+    "PageHeader": "src/components/ui/page-header.tsx",
+    "Progress": "src/components/ui/progress.tsx",
+    "Select": "src/components/ui/select.tsx",
+    "Separator": "src/components/ui/separator.tsx",
+    "Skeleton": "src/components/ui/skeleton.tsx",
+    "Tabs": "src/components/ui/tabs.tsx",
+    "Textarea": "src/components/ui/textarea.tsx",
+    "Toast": "src/components/ui/toast.tsx",
+    "AppLogo": "src/components/app/app-logo.tsx",
+    "ScreenHeader": "src/components/app/screen-header.tsx"
+  }
+}

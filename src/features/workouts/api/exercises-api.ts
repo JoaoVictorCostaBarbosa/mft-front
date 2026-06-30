@@ -4,8 +4,31 @@ import type {
   ExerciseType,
   MuscleGroup,
 } from "@/features/workouts/types";
+import type { WorkoutSetType } from "@/features/workout-sessions";
 import { apiRoutes } from "@/lib/api-routes";
 import { apiFetch } from "@/lib/http";
+
+export type ExerciseLastPerformanceSet = {
+  order: number;
+  reps: number;
+  set_type: WorkoutSetType;
+  weight: number;
+};
+
+export type ExerciseLastPerformance = {
+  exercise_id: string;
+  last_session_id: string;
+  performed_at: string;
+  sets: ExerciseLastPerformanceSet[];
+};
+
+export type GetExerciseLastPerformancesRequest = {
+  exercise_ids: string[];
+};
+
+export type ExerciseLastPerformancesResponse = {
+  items: ExerciseLastPerformance[];
+};
 
 export type GetExercisesParams = {
   equipment?: Equipment;
@@ -38,6 +61,18 @@ export function getExercises({
 }: GetExercisesParams) {
   return apiFetch<ExercisesResponse>(
     getExercisesRoute({ equipment, exerciseType, muscleGroup, page, perPage }),
+  );
+}
+
+export function getExerciseLastPerformances(
+  payload: GetExerciseLastPerformancesRequest,
+) {
+  return apiFetch<ExerciseLastPerformancesResponse>(
+    apiRoutes.exercises.lastPerformances,
+    {
+      method: "POST",
+      body: payload,
+    },
   );
 }
 

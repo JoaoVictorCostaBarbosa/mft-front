@@ -15,6 +15,7 @@ export const apiRoutes = {
     sendCode: "/api/users/send-code",
   },
   exercises: {
+    lastPerformances: "/api/exercises/last-performances",
     list: (page: number, perPage: number) =>
       `/api/exercises?page=${page}&per_page=${perPage}`,
     byEquipment: (equipment: string, page: number, perPage: number) =>

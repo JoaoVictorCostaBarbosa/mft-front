@@ -74,6 +74,8 @@ import type {
   PendingWorkoutOperation,
 } from "@/features/workout-sessions/lib/workout-session-storage";
 import { getWorkoutTemplateById } from "@/features/workouts/api/workout-templates-api";
+import { getExerciseLastPerformances } from "@/features/workouts/api/exercises-api";
+import type { ExerciseLastPerformance } from "@/features/workouts/api/exercises-api";
 import { useExercises } from "@/features/workouts/hooks/use-exercises";
 import type {
   Equipment,
@@ -95,8 +97,10 @@ type SessionExercise = Exercise & {
 
 type LoggedSet = {
   clientOperationId: string;
+  completed: boolean;
   completedAt: string;
   id: string;
+  origin?: "session" | "history" | "manual";
   reps: number;
   serverId?: string;
   setType: WorkoutSetType;
@@ -155,7 +159,9 @@ const muscleGroupOptions = Object.entries(muscleGroupLabels) as [
   string,
 ][];
 const setRowGridClassName =
-  "grid-cols-[2.25rem_minmax(0,1fr)_minmax(0,1fr)_4.5rem]";
+  "grid-cols-[2rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_3.5rem]";
+
+const REST_TIMER_SECONDS = 90;
 
 export function WorkoutSessionScreen() {
   const router = useRouter();
@@ -175,7 +181,37 @@ export function WorkoutSessionScreen() {
     PendingWorkoutOperation[]
   >([]);
   const [isSyncing, setIsSyncing] = React.useState(false);
+  const [restSecondsLeft, setRestSecondsLeft] = React.useState<number | null>(null);
+  const restIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
   const { refetchCurrentSession } = useActiveWorkout();
+
+  function startRestTimer() {
+    if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+    setRestSecondsLeft(REST_TIMER_SECONDS);
+    restIntervalRef.current = setInterval(() => {
+      setRestSecondsLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  function skipRestTimer() {
+    if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+    setRestSecondsLeft(null);
+  }
+
+  React.useEffect(() => {
+    return () => {
+      if (restIntervalRef.current) clearInterval(restIntervalRef.current);
+    };
+  }, []);
+  const materializingTemplateSessionIdsRef = React.useRef<Set<string>>(
+    new Set(),
+  );
   const syncLockRef = React.useRef(false);
 
   const persistWorkoutSession = React.useCallback(
@@ -203,6 +239,14 @@ export function WorkoutSessionScreen() {
       return;
     }
 
+    const syncableOperations = pendingOperations.filter(
+      (operation) => operation.status === "pending",
+    );
+
+    if (syncableOperations.length === 0) {
+      return;
+    }
+
     syncLockRef.current = true;
     setIsSyncing(true);
 
@@ -210,7 +254,7 @@ export function WorkoutSessionScreen() {
     let nextPendingOperations = pendingOperations;
 
     try {
-      for (const operation of pendingOperations) {
+      for (const operation of syncableOperations) {
         nextPendingOperations = markOperationStatus(
           nextPendingOperations,
           operation.id,
@@ -300,13 +344,26 @@ export function WorkoutSessionScreen() {
           );
 
           if (serverSetId) {
-            await deleteWorkoutSessionSet(session.id, serverSetId);
+            try {
+              await deleteWorkoutSessionSet(session.id, serverSetId);
+            } catch (error) {
+              if (!(error instanceof ApiError && error.status === 404)) {
+                throw error;
+              }
+            }
           }
 
           nextExercises = nextExercises.map((exercise) => ({
             ...exercise,
-            savedSets: exercise.savedSets.filter(
-              (set) => set.id !== operation.localSetId,
+            savedSets: exercise.savedSets.map((set) =>
+              set.id === operation.localSetId
+                ? {
+                    ...set,
+                    completed: false,
+                    serverId: undefined,
+                    syncStatus: "synced",
+                  }
+                : set,
             ),
           }));
         }
@@ -340,12 +397,15 @@ export function WorkoutSessionScreen() {
 
   const fetchSession = React.useCallback(async () => {
     const localWorkoutSession = readActiveWorkoutSession();
+    const localSessionExercises = localWorkoutSession
+      ? dedupeSessionExercises(
+          localWorkoutSession.exercises.map(fromLocalWorkoutExercise),
+        )
+      : [];
 
     if (localWorkoutSession) {
       setSession(localWorkoutSession.session);
-      setSessionExercises(
-        localWorkoutSession.exercises.map(fromLocalWorkoutExercise),
-      );
+      setSessionExercises(localSessionExercises);
       setPendingOperations(localWorkoutSession.pendingOperations);
     }
 
@@ -357,26 +417,46 @@ export function WorkoutSessionScreen() {
 
       if (
         currentSession.workout_template &&
-        currentSession.exercises.length === 0
+        currentSession.exercises.length === 0 &&
+        !materializingTemplateSessionIdsRef.current.has(currentSession.id)
       ) {
-        const template = await getWorkoutTemplateById(
-          currentSession.workout_template.id,
+        const sessionIdBeingMaterialized = currentSession.id;
+
+        materializingTemplateSessionIdsRef.current.add(
+          sessionIdBeingMaterialized,
         );
 
-        for (const exercise of template.exercises) {
-          await addExerciseToWorkoutSession(currentSession.id, {
-            client_operation_id: crypto.randomUUID(),
-            exercise_id: exercise.id,
-          });
-        }
+        try {
+          const template = await getWorkoutTemplateById(
+            currentSession.workout_template.id,
+          );
 
-        currentSession = await getCurrentWorkoutSession();
+          const uniqueTemplateExercises = dedupeExercisesById(
+            template.exercises,
+          );
+
+          for (const exercise of uniqueTemplateExercises) {
+            await addExerciseToWorkoutSession(sessionIdBeingMaterialized, {
+              client_operation_id: crypto.randomUUID(),
+              exercise_id: exercise.id,
+            });
+          }
+
+          currentSession = await getCurrentWorkoutSession();
+        } finally {
+          materializingTemplateSessionIdsRef.current.delete(
+            sessionIdBeingMaterialized,
+          );
+        }
       }
 
       const serverExercises = mergeServerSessionExercises(
         currentSession.exercises,
-        localWorkoutSession?.exercises.map(fromLocalWorkoutExercise) ?? [],
+        localSessionExercises,
         localWorkoutSession?.pendingOperations ?? [],
+      );
+      const hydratedExercises = await hydrateExercisesWithLastPerformances(
+        serverExercises,
       );
       const nextPendingOperations =
         localWorkoutSession?.session.id === currentSession.id
@@ -384,9 +464,13 @@ export function WorkoutSessionScreen() {
           : [];
 
       setSession(currentSession);
-      setSessionExercises(serverExercises);
+      setSessionExercises(hydratedExercises);
       setPendingOperations(nextPendingOperations);
-      persistWorkoutSession(currentSession, serverExercises, nextPendingOperations);
+      persistWorkoutSession(
+        currentSession,
+        hydratedExercises,
+        nextPendingOperations,
+      );
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         setSession(null);
@@ -409,10 +493,10 @@ export function WorkoutSessionScreen() {
   }, [fetchSession]);
 
   React.useEffect(() => {
-    if (pendingOperations.length > 0) {
+    if (pendingOperations.some((operation) => operation.status === "pending")) {
       void syncWorkoutQueue();
     }
-  }, [pendingOperations.length, syncWorkoutQueue]);
+  }, [pendingOperations, syncWorkoutQueue]);
 
   React.useEffect(() => {
     function handleOnline() {
@@ -474,8 +558,10 @@ export function WorkoutSessionScreen() {
     const localSetId = `local-set-${clientOperationId}`;
     const loggedSet: LoggedSet = {
       clientOperationId,
+      completed: true,
       completedAt,
       id: localSetId,
+      origin: "manual",
       reps: payload.reps,
       setType: payload.setType,
       syncStatus: "pending",
@@ -522,19 +608,11 @@ export function WorkoutSessionScreen() {
       ...set,
       reps: payload.reps,
       setType: payload.setType,
-      syncStatus: set.syncStatus === "synced" ? "pending" : set.syncStatus,
+      syncStatus:
+        set.completed && set.syncStatus === "synced" ? "pending" : set.syncStatus,
       weight: payload.weight,
     };
-    const operation = createPendingOperation({
-      localSetId: set.id,
-      payload: {
-        reps: payload.reps,
-        setType: payload.setType,
-        weight: payload.weight,
-      },
-      serverSetId: set.serverId,
-      type: "UPDATE_SET",
-    });
+    const shouldSyncUpdate = set.completed;
     const nextExercises = sessionExercises.map((exercise) =>
       exercise.id === exerciseId
         ? {
@@ -545,15 +623,71 @@ export function WorkoutSessionScreen() {
           }
         : exercise,
     );
-    const nextPendingOperations = [...pendingOperations, operation];
+    const nextPendingOperations = shouldSyncUpdate
+      ? [
+          ...pendingOperations,
+          createPendingOperation({
+            localSetId: set.id,
+            payload: {
+              reps: payload.reps,
+              setType: payload.setType,
+              weight: payload.weight,
+            },
+            serverSetId: set.serverId,
+            type: "UPDATE_SET",
+          }),
+        ]
+      : pendingOperations;
 
     setSessionExercises(nextExercises);
     setPendingOperations(nextPendingOperations);
     persistWorkoutSession(session, nextExercises, nextPendingOperations);
   }
 
-  function handleSetDeleted(exerciseId: string, set: LoggedSet) {
+  function handleSetCompletionChanged(
+    exerciseId: string,
+    set: LoggedSet,
+    completed: boolean,
+  ) {
     if (!session) {
+      return;
+    }
+
+    if (completed) {
+      const completedAt = new Date().toISOString();
+      const nextSet: LoggedSet = {
+        ...set,
+        completed: true,
+        completedAt,
+        syncStatus: "pending",
+      };
+      const operation = createPendingOperation({
+        clientOperationId: set.clientOperationId,
+        exerciseId,
+        localSetId: set.id,
+        payload: {
+          completedAt,
+          reps: set.reps,
+          setType: set.setType,
+          weight: set.weight,
+        },
+        type: "ADD_SET",
+      });
+      const nextExercises = sessionExercises.map((exercise) =>
+        exercise.id === exerciseId
+          ? {
+              ...exercise,
+              savedSets: exercise.savedSets.map((currentSet) =>
+                currentSet.id === set.id ? nextSet : currentSet,
+              ),
+            }
+          : exercise,
+      );
+      const nextPendingOperations = [...pendingOperations, operation];
+
+      setSessionExercises(nextExercises);
+      setPendingOperations(nextPendingOperations);
+      persistWorkoutSession(session, nextExercises, nextPendingOperations);
       return;
     }
 
@@ -561,12 +695,18 @@ export function WorkoutSessionScreen() {
       (operation) =>
         operation.type === "ADD_SET" && operation.localSetId === set.id,
     );
+    const nextSet: LoggedSet = {
+      ...set,
+      completed: false,
+      serverId: relatedPendingAdd ? set.serverId : undefined,
+      syncStatus: relatedPendingAdd ? "synced" : "pending",
+    };
     const nextExercises = sessionExercises.map((exercise) =>
       exercise.id === exerciseId
         ? {
             ...exercise,
-            savedSets: exercise.savedSets.filter(
-              (currentSet) => currentSet.id !== set.id,
+            savedSets: exercise.savedSets.map((currentSet) =>
+              currentSet.id === set.id ? nextSet : currentSet,
             ),
           }
         : exercise,
@@ -760,33 +900,106 @@ export function WorkoutSessionScreen() {
 
   return (
     <AppScreen>
-      <div className="mb-6 grid grid-cols-[1fr_auto] items-start gap-3">
-        <ScreenHeader
-          className="mb-0"
-          title={session?.workout_template?.name ?? "Treino em andamento"}
-          description={
-            session
-              ? `Iniciado às ${formatTime(session.started_at)}`
-              : "Nenhum treino em andamento."
-          }
-        />
+      {/* Header */}
+      <div className="mb-5 flex items-center gap-3">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="mt-1 size-10 shrink-0 rounded-full"
+          className="size-10 shrink-0 rounded-full"
           aria-label="Voltar"
           onClick={() => router.back()}
         >
           <ArrowLeft className="size-5" />
         </Button>
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display truncate text-lg font-bold tracking-tight text-foreground">
+            {session?.workout_template?.name ?? "Treino em andamento"}
+          </h1>
+          {session ? (
+            <p className="text-xs text-muted-foreground">
+              {formatElapsed(session.started_at)} · {sessionExercises.length} ex. · {getTotalSets(sessionExercises)} séries
+            </p>
+          ) : null}
+        </div>
+        {session ? (
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              size="sm"
+              disabled={isFinishing || pendingOperations.length > 0}
+              onClick={() => void handleFinish()}
+            >
+              {isFinishing ? "..." : "Finalizar"}
+            </Button>
+            <div className="relative">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-9 rounded-full"
+                aria-label="Ações do treino"
+                aria-expanded={isSessionMenuOpen}
+                disabled={isFinishing || isCancelling}
+                onClick={() => setIsSessionMenuOpen((c) => !c)}
+              >
+                <MoreVertical className="size-4" />
+              </Button>
+              {isSessionMenuOpen ? (
+                <div className="absolute right-0 top-10 z-20 grid min-w-44 gap-1 rounded-[12px] border border-border bg-card p-1 shadow-lg">
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
+                    onClick={() => { setIsSessionMenuOpen(false); setIsCancelOpen(true); }}
+                  >
+                    <Trash2 className="size-4" />
+                    Cancelar treino
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
+
+      {/* Rest timer banner */}
+      {restSecondsLeft !== null ? (
+        <div className="mb-4 flex items-center justify-between rounded-[14px] bg-accent-soft border border-primary/30 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Clock3 className="size-4 text-primary" />
+            <span className="text-sm font-semibold text-primary">
+              Descanso — {String(Math.floor(restSecondsLeft / 60)).padStart(2, "0")}:{String(restSecondsLeft % 60).padStart(2, "0")}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={skipRestTimer}
+            className="text-xs font-semibold text-primary hover:underline"
+          >
+            Pular
+          </button>
+        </div>
+      ) : null}
+
+      {/* Sync indicator */}
+      {session && pendingOperations.length > 0 ? (
+        <div
+          className={cn(
+            "mb-3 flex items-center gap-2 rounded-[10px] border px-3 py-2 text-xs",
+            isSyncing
+              ? "border-primary/30 bg-accent-soft text-primary"
+              : "border-destructive/30 bg-destructive/10 text-destructive",
+          )}
+        >
+          {isSyncing ? <Loader2 className="size-3.5 animate-spin" /> : null}
+          {isSyncing ? "Sincronizando..." : "Alterações pendentes de sincronização"}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <section className="grid gap-3">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
+          <Skeleton className="h-24 rounded-[20px]" />
+          <Skeleton className="h-24 rounded-[20px]" />
+          <Skeleton className="h-24 rounded-[20px]" />
         </section>
       ) : null}
 
@@ -812,95 +1025,17 @@ export function WorkoutSessionScreen() {
       ) : null}
 
       {!isLoading && !error && session ? (
-        <section className="grid gap-4">
-          <Card className="border-primary/40 bg-primary/5">
-            <CardContent className="grid gap-4 p-4">
-              {pendingOperations.length > 0 ? (
-                <div
-                  className={cn(
-                    "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                    isSyncing
-                      ? "border-primary/30 bg-primary/10 text-primary"
-                      : "border-destructive/30 bg-destructive/10 text-destructive",
-                  )}
-                >
-                  {isSyncing ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : null}
-                  {isSyncing
-                    ? "Sincronizando alterações..."
-                    : "Alterações pendentes de sincronização"}
-                </div>
-              ) : null}
-              <div className="flex items-center justify-between gap-3">
-                <div className="grid gap-1">
-                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/40 px-2.5 py-0.5 text-xs font-medium text-primary">
-                    <Clock3 className="size-3.5" />
-                    {formatElapsed(session.started_at)}
-                  </span>
-                  <p className="text-sm text-muted-foreground">
-                    {sessionExercises.length} exercício
-                    {sessionExercises.length === 1 ? "" : "s"} ·{" "}
-                    {getTotalSets(sessionExercises)} série
-                    {getTotalSets(sessionExercises) === 1 ? "" : "s"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    disabled={isFinishing || pendingOperations.length > 0}
-                    onClick={() => void handleFinish()}
-                  >
-                    {isFinishing ? "Finalizando..." : "Finalizar"}
-                  </Button>
-                  <div className="relative">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-9 rounded-full"
-                      aria-label="Ações do treino"
-                      aria-expanded={isSessionMenuOpen}
-                      disabled={isFinishing || isCancelling}
-                      onClick={() =>
-                        setIsSessionMenuOpen((current) => !current)
-                      }
-                    >
-                      <MoreVertical className="size-5" />
-                    </Button>
-                    {isSessionMenuOpen ? (
-                      <div className="absolute right-0 top-10 z-20 grid min-w-44 gap-1 rounded-md border border-border bg-background/95 p-1">
-                        <button
-                          type="button"
-                          className="flex items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
-                          onClick={() => {
-                            setIsSessionMenuOpen(false);
-                            setIsCancelOpen(true);
-                          }}
-                        >
-                          <Trash2 className="size-4" />
-                          Cancelar treino
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <AddSessionExerciseDialog
-                existingExerciseIds={
-                  new Set(sessionExercises.map((exercise) => exercise.id))
-                }
-                onAdd={handleAddExercise}
-              >
-                <Button className="h-11 rounded-lg">
-                  <Plus className="size-4" />
-                  Adicionar exercício
-                </Button>
-              </AddSessionExerciseDialog>
-            </CardContent>
-          </Card>
+        <section className="grid gap-3">
+          {/* Add exercise button */}
+          <AddSessionExerciseDialog
+            existingExerciseIds={new Set(sessionExercises.map((e) => e.id))}
+            onAdd={handleAddExercise}
+          >
+            <Button variant="outline" className="w-full h-11 border-dashed">
+              <Plus className="size-4" />
+              Adicionar exercício
+            </Button>
+          </AddSessionExerciseDialog>
 
           {sessionExercises.length === 0 ? (
             <EmptyState
@@ -925,7 +1060,10 @@ export function WorkoutSessionScreen() {
                   onSetCreate={(payload) =>
                     handleSetCreated(exercise.id, payload)
                   }
-                  onSetDelete={(set) => handleSetDeleted(exercise.id, set)}
+                  onSetCompletionChange={(set, completed) => {
+                    handleSetCompletionChanged(exercise.id, set, completed);
+                    if (completed) startRestTimer();
+                  }}
                   onSetUpdate={(set, payload) =>
                     handleSetUpdated(exercise.id, set, payload)
                   }
@@ -979,7 +1117,7 @@ type SessionExerciseCardProps = {
     setType: WorkoutSetType;
     weight: number;
   }) => void;
-  onSetDelete: (set: LoggedSet) => void;
+  onSetCompletionChange: (set: LoggedSet, completed: boolean) => void;
   onSetUpdate: (
     set: LoggedSet,
     payload: {
@@ -997,7 +1135,7 @@ function SessionExerciseCard({
   onMove,
   onRemove,
   onSetCreate,
-  onSetDelete,
+  onSetCompletionChange,
   onSetUpdate,
 }: SessionExerciseCardProps) {
   const [setType, setSetType] = React.useState<WorkoutSetType>("working");
@@ -1008,6 +1146,14 @@ function SessionExerciseCard({
   const [isRemoveOpen, setIsRemoveOpen] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isRemovingExercise, setIsRemovingExercise] = React.useState(false);
+
+  // Separate history (reference) from current sets
+  const historySets = exercise.savedSets.filter(
+    (s) => s.origin === "history" && !s.completed,
+  );
+  const currentSets = exercise.savedSets.filter(
+    (s) => s.origin !== "history" || s.completed,
+  );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1060,15 +1206,15 @@ function SessionExerciseCard({
 
   return (
     <>
-    <Card className="overflow-visible border-border bg-transparent">
+    <Card className="overflow-visible border-border bg-card">
       <CardContent className="grid gap-0 p-0">
         <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-border px-4 py-3">
-          <div className="grid gap-1">
-            <h2 className="text-base font-semibold text-foreground">
+          <div className="grid gap-0.5">
+            <h2 className="font-display text-sm font-bold text-foreground">
               {exercise.name}
             </h2>
             <p className="text-xs text-muted-foreground">
-              {exercise.muscle_group} · {exercise.equipment}
+              {muscleGroupLabels[exercise.muscle_group as MuscleGroup] ?? exercise.muscle_group} · {equipmentLabels[exercise.equipment as Equipment] ?? exercise.equipment}
             </p>
           </div>
           <div className="relative">
@@ -1081,41 +1227,32 @@ function SessionExerciseCard({
               aria-expanded={isMenuOpen}
               onClick={() => setIsMenuOpen((current) => !current)}
             >
-              <MoreVertical className="size-5" />
+              <MoreVertical className="size-4" />
             </Button>
             {isMenuOpen ? (
-              <div className="absolute right-0 top-10 z-20 grid min-w-44 gap-1 rounded-md border border-border bg-background/95 p-1">
+              <div className="absolute right-0 top-10 z-20 grid min-w-44 gap-1 rounded-[12px] border border-border bg-card p-1 shadow-lg">
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!canMoveUp}
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onMove(-1);
-                  }}
+                  onClick={() => { setIsMenuOpen(false); onMove(-1); }}
                 >
                   <ArrowUp className="size-4" />
                   Subir
                 </button>
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!canMoveDown}
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onMove(1);
-                  }}
+                  onClick={() => { setIsMenuOpen(false); onMove(1); }}
                 >
                   <ArrowDown className="size-4" />
                   Descer
                 </button>
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-sm px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsRemoveOpen(true);
-                  }}
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
+                  onClick={() => { setIsMenuOpen(false); setIsRemoveOpen(true); }}
                 >
                   <Trash2 className="size-4" />
                   Remover
@@ -1128,25 +1265,43 @@ function SessionExerciseCard({
         <div className="grid px-4 py-3">
           <div
             className={cn(
-              "grid items-center gap-2 border-b border-border pb-2 text-xs font-semibold uppercase text-muted-foreground",
+              "grid items-center gap-2 border-b border-border pb-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground",
               setRowGridClassName,
             )}
           >
             <span>Set</span>
+            <span>Ant.</span>
             <span>kg</span>
-            <span>reps</span>
-            <span className="text-right">ações</span>
+            <span>Reps</span>
+            <span className="text-right">✓</span>
           </div>
 
-          {exercise.savedSets.map((set, index) => (
-            <SavedSetRow
-              key={set.id}
-              index={index}
-              set={set}
-              onDeleted={() => onSetDelete(set)}
-              onUpdated={(payload) => onSetUpdate(set, payload)}
-            />
-          ))}
+          {/* History sets shown as reference rows (not completed) */}
+          {historySets.length > 0 && currentSets.length === 0
+            ? historySets.map((set, index) => (
+                <SavedSetRow
+                  key={set.id}
+                  index={index}
+                  set={set}
+                  historyRef={null}
+                  onCompletionChange={(completed) =>
+                    onSetCompletionChange(set, completed)
+                  }
+                  onUpdated={(payload) => onSetUpdate(set, payload)}
+                />
+              ))
+            : currentSets.map((set, index) => (
+                <SavedSetRow
+                  key={set.id}
+                  index={index}
+                  set={set}
+                  historyRef={historySets[index] ?? null}
+                  onCompletionChange={(completed) =>
+                    onSetCompletionChange(set, completed)
+                  }
+                  onUpdated={(payload) => onSetUpdate(set, payload)}
+                />
+              ))}
 
           {isAddingSet ? (
             <form
@@ -1158,6 +1313,8 @@ function SessionExerciseCard({
                 value={setType}
                 onValueChange={setSetType}
               />
+              {/* Ant. placeholder */}
+              <span className="py-2 text-center text-xs text-muted-foreground">—</span>
               <SetInlineInput
                 type="number"
                 min={0}
@@ -1184,36 +1341,32 @@ function SessionExerciseCard({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-10 rounded-full"
+                  className="size-8 rounded-full"
                   disabled={isSaving}
                   aria-label="Cancelar nova série"
-                  onClick={() => {
-                    setIsAddingSet(false);
-                    setReps("");
-                    setWeight("");
-                  }}
+                  onClick={() => { setIsAddingSet(false); setReps(""); setWeight(""); }}
                 >
-                  <X className="size-4" />
+                  <X className="size-3.5" />
                 </Button>
                 <Button
                   type="submit"
                   size="icon"
-                  className="size-10 rounded-full"
+                  className="size-8 rounded-full"
                   disabled={isSaving}
                   aria-label="Registrar série"
                 >
-                  <Check className="size-4" />
+                  <Check className="size-3.5" />
                 </Button>
               </span>
             </form>
           ) : (
             <Button
               type="button"
-              variant="secondary"
-              className="mt-3 h-10 justify-center rounded-lg"
+              variant="ghost"
+              className="mt-3 h-9 w-full justify-center rounded-full border border-dashed border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary"
               onClick={() => setIsAddingSet(true)}
             >
-              <Plus className="size-4" />
+              <Plus className="size-3.5" />
               Adicionar série
             </Button>
           )}
@@ -1254,7 +1407,8 @@ function SessionExerciseCard({
 
 type SavedSetRowProps = {
   index: number;
-  onDeleted: () => void;
+  historyRef: LoggedSet | null;
+  onCompletionChange: (completed: boolean) => void;
   onUpdated: (payload: {
     reps: number;
     setType: WorkoutSetType;
@@ -1265,12 +1419,12 @@ type SavedSetRowProps = {
 
 function SavedSetRow({
   index,
-  onDeleted,
+  historyRef,
+  onCompletionChange,
   onUpdated,
   set,
 }: SavedSetRowProps) {
   const [isEditOpen, setIsEditOpen] = React.useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
   const [setType, setSetType] = React.useState<WorkoutSetType>(set.setType);
   const [weight, setWeight] = React.useState(String(set.weight));
   const [reps, setReps] = React.useState(String(set.reps));
@@ -1311,12 +1465,11 @@ function SavedSetRow({
     setIsSubmitting(false);
   }
 
-  function handleDeleteConfirm() {
-    setIsSubmitting(true);
-    onDeleted();
-    setIsDeleteOpen(false);
-    setIsSubmitting(false);
-  }
+  const anteriorLabel = historyRef
+    ? `${historyRef.weight}×${historyRef.reps}`
+    : set.origin === "history"
+      ? `${set.weight}×${set.reps}`
+      : "—";
 
   return (
     <>
@@ -1333,6 +1486,8 @@ function SavedSetRow({
             value={setType}
             onValueChange={setSetType}
           />
+          {/* Ant. in edit mode */}
+          <span className="py-2 text-center text-xs text-muted-foreground">{anteriorLabel}</span>
           <SetInlineInput
             type="number"
             min={0}
@@ -1357,21 +1512,21 @@ function SavedSetRow({
               type="button"
               variant="ghost"
               size="icon"
-              className="size-10 rounded-full"
+              className="size-8 rounded-full"
               disabled={isSubmitting}
               aria-label="Cancelar edição"
               onClick={() => setIsEditOpen(false)}
             >
-              <X className="size-4" />
+              <X className="size-3.5" />
             </Button>
             <Button
               type="submit"
               size="icon"
-              className="size-10 rounded-full"
+              className="size-8 rounded-full"
               disabled={isSubmitting}
               aria-label="Salvar série"
             >
-              <Check className="size-4" />
+              <Check className="size-3.5" />
             </Button>
           </span>
         </form>
@@ -1380,66 +1535,46 @@ function SavedSetRow({
           className={cn(
             "grid items-center gap-2 border-b border-border/60 py-2 text-sm",
             setRowGridClassName,
+            set.origin === "history" && !set.completed && "opacity-60",
           )}
         >
-          <span className="font-semibold text-primary">
+          <span className="text-xs font-bold text-primary">
             {getSetTypeShortLabel(set.setType)}
             {index + 1}
           </span>
-          <span className="text-foreground">{set.weight}</span>
-          <span className="text-foreground">{set.reps}</span>
+          <span className="text-center text-xs text-muted-foreground">{anteriorLabel}</span>
+          <span className="text-center text-foreground">{set.weight}</span>
+          <span className="text-center text-foreground">{set.reps}</span>
           <span className="flex justify-end gap-1">
+            {set.origin !== "history" || set.completed ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-7 rounded-full"
+                aria-label="Editar série"
+                onClick={() => setIsEditOpen(true)}
+              >
+                <Pencil className="size-3" />
+              </Button>
+            ) : null}
             <Button
               type="button"
-              variant="ghost"
               size="icon"
-              className="size-8 rounded-full"
-              aria-label="Editar série"
-              onClick={() => setIsEditOpen(true)}
+              className={cn(
+                "size-7 rounded-full",
+                set.completed
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "border border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-primary",
+              )}
+              aria-label={set.completed ? "Desmarcar série" : "Completar série"}
+              onClick={() => onCompletionChange(!set.completed)}
             >
-              <Pencil className="size-3.5" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-full text-destructive hover:bg-destructive/10"
-              aria-label="Remover série"
-              onClick={() => setIsDeleteOpen(true)}
-            >
-              <Trash2 className="size-3.5" />
+              {set.completed ? <Check className="size-3" /> : null}
             </Button>
           </span>
         </div>
       )}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remover série?</DialogTitle>
-            <DialogDescription>
-              Esta ação remove a série registrada deste treino.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isSubmitting}
-              onClick={() => setIsDeleteOpen(false)}
-            >
-              Voltar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isSubmitting}
-              onClick={() => void handleDeleteConfirm()}
-            >
-              {isSubmitting ? "Removendo..." : "Remover"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
@@ -1667,9 +1802,8 @@ function AddSessionExerciseDialog({
                   type="button"
                   aria-busy={isAdding}
                   className={cn(
-                    "grid rounded-md border border-border p-3 text-left transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70",
-                    isAdding &&
-                      "border-primary/60 bg-primary/10 text-primary opacity-100",
+                    "grid rounded-[12px] border border-border p-3 text-left transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-70",
+                    isAdding && "border-primary/60 bg-accent-soft opacity-100",
                   )}
                   disabled={Boolean(addingExerciseId)}
                   onClick={() => void handleAdd(exercise)}
@@ -1705,7 +1839,8 @@ function AddSessionExerciseDialog({
 function mapSessionExercises(
   exercises: CurrentWorkoutSessionExercise[],
 ): SessionExercise[] {
-  return [...exercises]
+  return dedupeSessionExercises(
+    [...exercises]
     .sort((firstExercise, secondExercise) => firstExercise.order - secondExercise.order)
     .map((sessionExercise) => ({
       ...sessionExercise.exercise,
@@ -1714,20 +1849,139 @@ function mapSessionExercises(
       savedSets: sessionExercise.sets.map((set) => mapWorkoutSet(set)),
       sessionExerciseId: sessionExercise.id,
       syncStatus: "synced",
-    }));
+    })),
+  );
 }
 
 function mapWorkoutSet(set: WorkoutSessionSet, localId = set.id): LoggedSet {
   return {
     clientOperationId: set.client_operation_id ?? crypto.randomUUID(),
+    completed: true,
     completedAt: set.completed_at ?? set.created_at,
     id: localId,
+    origin: "session",
     reps: set.reps,
     serverId: set.id,
     setType: set.set_type,
     syncStatus: "synced",
     weight: set.weight,
   };
+}
+
+function dedupeSessionExercises(
+  exercises: SessionExercise[],
+): SessionExercise[] {
+  const exerciseById = new Map<string, SessionExercise>();
+
+  for (const exercise of exercises) {
+    const currentExercise = exerciseById.get(exercise.id);
+
+    if (!currentExercise) {
+      exerciseById.set(exercise.id, exercise);
+      continue;
+    }
+
+    exerciseById.set(
+      exercise.id,
+      mergeDuplicateSessionExercise(currentExercise, exercise),
+    );
+  }
+
+  return [...exerciseById.values()].sort(
+    (firstExercise, secondExercise) => firstExercise.order - secondExercise.order,
+  );
+}
+
+function mergeDuplicateSessionExercise(
+  firstExercise: SessionExercise,
+  secondExercise: SessionExercise,
+): SessionExercise {
+  const preferredExercise = choosePreferredSessionExercise(
+    firstExercise,
+    secondExercise,
+  );
+  const fallbackExercise =
+    preferredExercise.sessionExerciseId === firstExercise.sessionExerciseId
+      ? secondExercise
+      : firstExercise;
+
+  return {
+    ...preferredExercise,
+    clientOperationId:
+      preferredExercise.clientOperationId ?? fallbackExercise.clientOperationId,
+    order: Math.min(firstExercise.order, secondExercise.order),
+    savedSets: dedupeLoggedSets([
+      ...firstExercise.savedSets,
+      ...secondExercise.savedSets,
+    ]),
+    syncStatus:
+      firstExercise.syncStatus === "pending" ||
+      secondExercise.syncStatus === "pending"
+        ? "pending"
+        : preferredExercise.syncStatus,
+  };
+}
+
+function choosePreferredSessionExercise(
+  firstExercise: SessionExercise,
+  secondExercise: SessionExercise,
+) {
+  if (firstExercise.savedSets.length !== secondExercise.savedSets.length) {
+    return firstExercise.savedSets.length > secondExercise.savedSets.length
+      ? firstExercise
+      : secondExercise;
+  }
+
+  if (firstExercise.syncStatus !== secondExercise.syncStatus) {
+    return firstExercise.syncStatus === "synced" ? firstExercise : secondExercise;
+  }
+
+  return firstExercise.order <= secondExercise.order
+    ? firstExercise
+    : secondExercise;
+}
+
+function dedupeLoggedSets(sets: LoggedSet[]) {
+  const setByKey = new Map<string, LoggedSet>();
+
+  for (const set of sets) {
+    const key = getLoggedSetDedupeKey(set);
+    const currentSet = setByKey.get(key);
+
+    setByKey.set(key, currentSet ? choosePreferredLoggedSet(currentSet, set) : set);
+  }
+
+  return [...setByKey.values()];
+}
+
+function getLoggedSetDedupeKey(set: LoggedSet) {
+  return set.serverId ?? set.clientOperationId ?? set.id;
+}
+
+function choosePreferredLoggedSet(firstSet: LoggedSet, secondSet: LoggedSet) {
+  if (firstSet.syncStatus !== secondSet.syncStatus) {
+    return firstSet.syncStatus === "synced" ? firstSet : secondSet;
+  }
+
+  if (firstSet.completed !== secondSet.completed) {
+    return firstSet.completed ? firstSet : secondSet;
+  }
+
+  return firstSet;
+}
+
+function dedupeExercisesById<TExercise extends Exercise>(
+  exercises: TExercise[],
+) {
+  const exerciseById = new Map<string, TExercise>();
+
+  for (const exercise of exercises) {
+    if (!exerciseById.has(exercise.id)) {
+      exerciseById.set(exercise.id, exercise);
+    }
+  }
+
+  return [...exerciseById.values()];
 }
 
 function mergeServerSessionExercises(
@@ -1756,7 +2010,7 @@ function mergeServerSessionExercises(
       }
 
       const pendingSets = localExercise.savedSets.filter(
-        (set) => set.syncStatus !== "synced",
+        (set) => set.syncStatus !== "synced" || !set.completed,
       );
       const savedSets = serverExercise.savedSets
         .filter(
@@ -1779,9 +2033,65 @@ function mergeServerSessionExercises(
     (exercise) => exercise.syncStatus !== "synced",
   );
 
-  return [...mappedServerExercises, ...pendingLocalExercises].sort(
-    (firstExercise, secondExercise) => firstExercise.order - secondExercise.order,
-  );
+  return dedupeSessionExercises([...mappedServerExercises, ...pendingLocalExercises]);
+}
+
+async function hydrateExercisesWithLastPerformances(
+  exercises: SessionExercise[],
+) {
+  const exerciseIdsWithoutSets = exercises
+    .filter((exercise) => exercise.savedSets.length === 0)
+    .map((exercise) => exercise.id);
+
+  if (exerciseIdsWithoutSets.length === 0) {
+    return exercises;
+  }
+
+  try {
+    const response = await getExerciseLastPerformances({
+      exercise_ids: exerciseIdsWithoutSets,
+    });
+    const performanceByExerciseId = new Map(
+      response.items.map((performance) => [performance.exercise_id, performance]),
+    );
+
+    return dedupeSessionExercises(exercises.map((exercise) => {
+      const performance = performanceByExerciseId.get(exercise.id);
+
+      if (!performance?.sets.length) {
+        return exercise;
+      }
+
+      return {
+        ...exercise,
+        savedSets: mapLastPerformanceSets(performance),
+      };
+    }));
+  } catch {
+    return dedupeSessionExercises(exercises);
+  }
+}
+
+function mapLastPerformanceSets(
+  performance: ExerciseLastPerformance,
+): LoggedSet[] {
+  return [...performance.sets]
+    .sort((firstSet, secondSet) => firstSet.order - secondSet.order)
+    .map((set) => {
+      const clientOperationId = crypto.randomUUID();
+
+      return {
+        clientOperationId,
+        completed: false,
+        completedAt: performance.performed_at,
+        id: `history-set-${clientOperationId}`,
+        origin: "history",
+        reps: set.reps,
+        setType: set.set_type,
+        syncStatus: "synced",
+        weight: set.weight,
+      };
+    });
 }
 
 function toLocalWorkoutExercise(
@@ -1802,8 +2112,10 @@ function toLocalWorkoutExercise(
 function toLocalWorkoutSet(set: LoggedSet): LocalWorkoutSet {
   return {
     clientOperationId: set.clientOperationId,
+    completed: set.completed,
     completedAt: set.completedAt,
     localId: set.id,
+    origin: set.origin,
     reps: set.reps,
     serverId: set.serverId,
     setType: set.setType,
@@ -1828,8 +2140,10 @@ function fromLocalWorkoutExercise(
 function fromLocalWorkoutSet(localSet: LocalWorkoutSet): LoggedSet {
   return {
     clientOperationId: localSet.clientOperationId,
+    completed: localSet.completed,
     completedAt: localSet.completedAt,
     id: localSet.localId,
+    origin: localSet.origin,
     reps: localSet.reps,
     serverId: localSet.serverId,
     setType: localSet.setType,

@@ -1,12 +1,12 @@
 "use client";
 
+import { Check, ChevronRight, Dumbbell, Flame, Play, Plus, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { AppScreen } from "@/components/app/app-screen";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
@@ -23,31 +23,33 @@ import { getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
 
 const weekDays: Array<{ dayOfWeek: DayOfWeek; label: string }> = [
-  { dayOfWeek: "sunday", label: "D" },
   { dayOfWeek: "monday", label: "S" },
   { dayOfWeek: "tuesday", label: "T" },
   { dayOfWeek: "wednesday", label: "Q" },
   { dayOfWeek: "thursday", label: "Q" },
   { dayOfWeek: "friday", label: "S" },
   { dayOfWeek: "saturday", label: "S" },
+  { dayOfWeek: "sunday", label: "D" },
 ];
+
+const WEEK_GOAL = 5;
+const RING_R = 43;
+const RING_STROKE = 10;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_R;
 
 export function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
   const { data, error, isLoading, refetch } = useDashboardData();
   const { refetchCurrentSession } = useActiveWorkout();
-  const [isSessionActionLoading, setIsSessionActionLoading] =
-    React.useState(false);
-  const [todayDayOfWeek, setTodayDayOfWeek] =
-    React.useState<DayOfWeek | null>(null);
+  const [isSessionActionLoading, setIsSessionActionLoading] = React.useState(false);
+  const [todayDayOfWeek, setTodayDayOfWeek] = React.useState<DayOfWeek | null>(null);
+
   const activePlan = data?.currentWorkoutPlan;
   const currentSession = data?.currentWorkoutSession;
   const todayRoutineItem =
     todayDayOfWeek && activePlan?.routine_mode === "weekly"
-      ? activePlan.routine_items.find(
-          (item) => item.day_of_week === todayDayOfWeek,
-        )
+      ? activePlan.routine_items.find((item) => item.day_of_week === todayDayOfWeek)
       : undefined;
   const nextSequentialItem =
     activePlan?.routine_mode === "sequential" ? data?.nextRoutineItem : null;
@@ -56,18 +58,12 @@ export function DashboardScreen() {
     displayRoutineItem?.item_type === "workout"
       ? displayRoutineItem.workout_template
       : undefined;
-  const cardTemplateName =
-    currentSession?.workout_template?.name ?? activeTemplate?.name;
+  const cardTemplateName = currentSession?.workout_template?.name ?? activeTemplate?.name;
   const isRestDay = displayRoutineItem?.item_type === "rest";
   const isSequentialPlan = activePlan?.routine_mode === "sequential";
   const hasWorkoutPlans = Boolean(data?.workoutPlans.length);
   const todayLabel = todayDayOfWeek ? dayOfWeekLabels[todayDayOfWeek] : "hoje";
-  const hasTrainedToday = Boolean(
-    todayDayOfWeek &&
-      data?.weeklySummary.days.some(
-        (day) => day.day_of_week === todayDayOfWeek && day.trained,
-      ),
-  );
+
   const trainedDays = React.useMemo(
     () =>
       new Set(
@@ -78,13 +74,22 @@ export function DashboardScreen() {
     [data?.weeklySummary.days],
   );
 
+  const weeklyCount = trainedDays.size;
+  const weeklyProgress = Math.min(weeklyCount / WEEK_GOAL, 1);
+  const ringDash = weeklyProgress * RING_CIRCUMFERENCE;
+  const ringGap = RING_CIRCUMFERENCE - ringDash;
+
+  const todayFormatted = React.useMemo(
+    () =>
+      new Intl.DateTimeFormat("pt-BR", { weekday: "short", day: "numeric", month: "short" })
+        .format(new Date())
+        .replace(/^\w/, (c) => c.toUpperCase()),
+    [],
+  );
+
   async function handleFinishWorkout() {
-    if (!currentSession) {
-      return;
-    }
-
+    if (!currentSession) return;
     setIsSessionActionLoading(true);
-
     try {
       await finishWorkoutSession(currentSession.id, { finished_at: null });
       toast({
@@ -106,12 +111,8 @@ export function DashboardScreen() {
 
   async function handleStartFreeWorkout() {
     setIsSessionActionLoading(true);
-
     try {
-      await createWorkoutSession({
-        workout_plan_id: null,
-        workout_template_id: null,
-      });
+      await createWorkoutSession({ workout_plan_id: null, workout_template_id: null });
       toast({
         title: "Treino avulso iniciado",
         description: "Adicione exercícios para registrar suas séries.",
@@ -135,21 +136,28 @@ export function DashboardScreen() {
 
   return (
     <AppScreen>
-      <header className="mb-7 grid gap-1.5">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Olá, {user?.name ?? "User"}
-        </h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          {hasTrainedToday
-            ? "Treino de hoje concluído. Bom trabalho."
-            : "Pronto para o treino de hoje?"}
-        </p>
+      {/* Header */}
+      <header className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-[13.5px] font-medium text-muted-foreground">{todayFormatted}</p>
+          <h1 className="mt-0.5 font-display text-[27px] font-bold tracking-[-0.03em] text-foreground">
+            Bom treino, {user?.name?.split(" ")[0] ?? "Atleta"}
+          </h1>
+        </div>
+        <div className="flex size-[42px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-primary bg-accent-soft font-display text-base font-bold text-primary">
+          {getInitials(user?.name)}
+        </div>
       </header>
 
       {isLoading ? (
-        <section className="grid gap-4">
-          <Skeleton className="h-40" />
-          <Skeleton className="h-24" />
+        <section className="grid gap-3">
+          <Skeleton className="h-36 rounded-[20px]" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-28 rounded-[20px]" />
+            <Skeleton className="h-28 rounded-[20px]" />
+          </div>
+          <Skeleton className="h-20 rounded-[20px]" />
+          <Skeleton className="h-20 rounded-[20px]" />
         </section>
       ) : null}
 
@@ -162,136 +170,227 @@ export function DashboardScreen() {
       ) : null}
 
       {!isLoading && !error ? (
-        <section className="grid gap-6">
-          <Card className="border-border bg-transparent">
-            <CardHeader className="gap-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="grid gap-1">
-                  <span className="w-fit rounded-full border border-primary/40 px-2.5 py-0.5 text-xs font-medium text-primary">
-                    Treino de hoje
+        <section className="grid gap-3">
+          {/* Weekly goal card */}
+          <div
+            className="rounded-[20px] border border-border bg-card p-5"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            <div className="flex items-center gap-5">
+              {/* SVG ring */}
+              <div className="relative size-24 shrink-0">
+                <svg width="96" height="96" viewBox="0 0 96 96" className="-rotate-90">
+                  <circle cx="48" cy="48" r={RING_R} fill="none" stroke="var(--track)" strokeWidth={RING_STROKE} />
+                  <circle
+                    cx="48" cy="48" r={RING_R} fill="none" stroke="var(--primary)"
+                    strokeWidth={RING_STROKE} strokeLinecap="round"
+                    strokeDasharray={`${ringDash} ${ringGap}`}
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-display text-[24px] font-semibold leading-none tracking-[-0.03em] text-foreground">
+                    {weeklyCount}
                   </span>
-                  <CardTitle className="text-xl">
-                    {cardTemplateName ??
-                      (isRestDay && isSequentialPlan
-                        ? "Próximo descanso"
-                        : null) ??
-                      (isRestDay ? "Descanso hoje" : null) ??
-                      (isSequentialPlan ? "Rotina sequencial" : null) ??
-                      (activePlan
-                        ? "Sem treino para hoje"
-                        : null) ??
-                      (hasWorkoutPlans
-                        ? "Escolha seu plano atual"
-                        : "Nenhum treino definido")}
-                  </CardTitle>
-                  <CardDescription>
-                    {currentSession
-                      ? `Em andamento desde ${formatTime(currentSession.started_at)}.`
-                      : hasTrainedToday
-                        ? "Você já registrou treino hoje."
-                      : activeTemplate
-                      ? isSequentialPlan
-                        ? "Próximo treino disponível na sequência."
-                        : `Treino cadastrado para ${todayLabel}.`
-                      : isRestDay && isSequentialPlan
-                        ? "O próximo item da sequência é um descanso."
-                        : isRestDay
-                        ? `Este plano marca ${todayLabel} como descanso.`
-                        : isSequentialPlan
-                          ? nextSequentialItem
-                            ? "Próximo treino disponível na sequência."
-                            : "Abra o plano para organizar a sequência."
-                      : activePlan
-                        ? `O plano atual não tem treino cadastrado para ${todayLabel}.`
-                        : hasWorkoutPlans
-                          ? "Defina um plano atual para destacar sua rotina."
-                        : "Crie um plano para organizar sua rotina."}
-                  </CardDescription>
+                  <span className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                    de {WEEK_GOAL}
+                  </span>
                 </div>
               </div>
 
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-base font-bold tracking-[-0.02em] text-foreground">
+                  Meta da semana
+                </p>
+                <p className="mt-1.5 text-[13.5px] leading-[1.4] text-muted-foreground">
+                  {weeklyCount >= WEEK_GOAL
+                    ? "Meta atingida! 🎉"
+                    : `Faltam ${WEEK_GOAL - weeklyCount} treino${WEEK_GOAL - weeklyCount === 1 ? "" : "s"} pra fechar 🔥`}
+                </p>
+                {/* Day squares */}
+                <div className="mt-3.5 flex gap-1.5">
+                  {weekDays.map((day) => {
+                    const isTrained = trainedDays.has(day.dayOfWeek);
+                    const isToday = day.dayOfWeek === todayDayOfWeek;
+                    return (
+                      <div key={day.dayOfWeek} className="flex-1 text-center">
+                        <div
+                          className={
+                            isTrained
+                              ? "flex h-[30px] items-center justify-center rounded-[8px] bg-primary"
+                              : isToday
+                                ? "flex h-[30px] items-center justify-center rounded-[8px] border-[1.5px] border-primary bg-track"
+                                : "h-[30px] rounded-[8px] bg-track"
+                          }
+                        >
+                          {isTrained ? (
+                            <Check className="size-3.5 stroke-[3] text-primary-foreground" />
+                          ) : null}
+                        </div>
+                        <span
+                          className={`mt-1.5 block text-[10.5px] font-semibold ${isToday && !isTrained ? "text-primary" : "text-faint"}`}
+                        >
+                          {day.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stat cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div
+              className="rounded-[20px] border border-border bg-card p-4"
+              style={{ boxShadow: "var(--shadow-card)" }}
+            >
+              <div className="mb-3 flex size-[34px] items-center justify-center rounded-[10px] bg-accent-soft text-primary">
+                <Flame className="size-[18px]" />
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-display text-[28px] font-semibold leading-none tracking-[-0.03em] text-foreground">
+                  {weeklyCount}
+                </span>
+                <span className="font-display text-sm font-medium text-muted-foreground">
+                  sem
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <span className="text-[13px] font-medium text-muted-foreground">Sequência</span>
+                <span className="inline-flex items-center text-xs font-semibold text-primary">
+                  <TrendingUp className="size-[13px]" />
+                </span>
+              </div>
+            </div>
+            <div
+              className="rounded-[20px] border border-border bg-card p-4"
+              style={{ boxShadow: "var(--shadow-card)" }}
+            >
+              <div className="mb-3 flex size-[34px] items-center justify-center rounded-[10px] bg-accent-soft text-primary">
+                <Dumbbell className="size-[18px]" />
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-display text-[28px] font-semibold leading-none tracking-[-0.03em] text-foreground">
+                  —
+                </span>
+                <span className="font-display text-sm font-medium text-muted-foreground">
+                  t
+                </span>
+              </div>
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <span className="text-[13px] font-medium text-muted-foreground">Volume semanal</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Continuar de onde parou */}
+          <h3 className="font-display text-[17px] font-bold tracking-[-0.02em] text-foreground">
+            {currentSession ? "Em andamento" : "Continuar de onde parou"}
+          </h3>
+          <div
+            className="rounded-[20px] border border-border bg-card overflow-hidden"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            <div className="flex items-center gap-3.5 p-4">
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-[14px] bg-accent-soft text-primary">
+                <Dumbbell className="size-[26px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-base font-bold tracking-[-0.02em] text-foreground truncate">
+                  {cardTemplateName ??
+                    (isRestDay ? "Descanso" : null) ??
+                    (activePlan ? "Sem treino hoje" : null) ??
+                    (hasWorkoutPlans ? "Escolha um plano" : "Nenhum treino")}
+                </p>
+                <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">
+                  {currentSession
+                    ? `Iniciado às ${formatTime(currentSession.started_at)}`
+                    : hasWorkoutPlans && activePlan
+                      ? isRestDay
+                        ? "Dia de descanso"
+                        : activeTemplate
+                          ? isSequentialPlan ? "Próximo na sequência" : `Treino de ${todayLabel}`
+                          : `Sem treino para ${todayLabel}`
+                      : hasWorkoutPlans
+                        ? "Defina um plano atual"
+                        : "Crie um plano de treino"}
+                </p>
+              </div>
               {currentSession ? (
+                <Link href={routes.workoutSession}>
+                  <div
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    style={{ boxShadow: "0 6px 14px -6px var(--primary)" }}
+                  >
+                    <Play className="size-5 ml-0.5" />
+                  </div>
+                </Link>
+              ) : activeTemplate ? (
+                <Link href={routes.workoutTemplate(activeTemplate.id, activePlan?.id)}>
+                  <div
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                    style={{ boxShadow: "0 6px 14px -6px var(--primary)" }}
+                  >
+                    <Play className="size-5 ml-0.5" />
+                  </div>
+                </Link>
+              ) : activePlan ? (
+                <Link href={routes.workoutPlan(activePlan.id)}>
+                  <ChevronRight className="size-5 text-faint" />
+                </Link>
+              ) : null}
+            </div>
+            {currentSession ? (
+              <div className="flex gap-2 border-t border-border px-4 py-3">
+                <Button asChild className="flex-1 h-10 text-sm">
+                  <Link href={routes.workoutSession}>
+                    <Play className="size-4" />
+                    Continuar
+                  </Link>
+                </Button>
                 <Button
-                  className="h-12 w-full rounded-lg text-base"
+                  variant="outline"
+                  className="h-10 px-4 text-sm"
                   disabled={isSessionActionLoading}
                   onClick={() => void handleFinishWorkout()}
                 >
-                  {isSessionActionLoading ? "Finalizando..." : "Finalizar treino"}
+                  {isSessionActionLoading ? "..." : "Finalizar"}
                 </Button>
-              ) : activeTemplate ? (
-                <Button asChild className="h-12 w-full rounded-lg text-base">
-                  <Link
-                    href={routes.workoutTemplate(
-                      activeTemplate.id,
-                      activePlan?.id,
-                    )}
-                  >
-                    Ver treino
-                  </Link>
-                </Button>
-              ) : activePlan ? (
-                <Button asChild className="h-12 w-full rounded-lg text-base">
-                  <Link href={routes.workoutPlan(activePlan.id)}>
-                    Ver plano
-                  </Link>
-                </Button>
-              ) : hasWorkoutPlans ? (
-                <Button asChild className="h-12 w-full rounded-lg text-base">
-                  <Link href={routes.workouts}>Ver planos</Link>
-                </Button>
-              ) : (
+              </div>
+            ) : !activePlan && !hasWorkoutPlans ? (
+              <div className="border-t border-border px-4 py-3">
                 <CreateWorkoutPlanDialog onCreated={refetch}>
-                  <Button className="h-12 w-full rounded-lg text-base">
+                  <Button className="w-full h-10 text-sm">
+                    <Plus className="size-4" />
                     Criar plano
                   </Button>
                 </CreateWorkoutPlanDialog>
-              )}
-            </CardHeader>
-          </Card>
+              </div>
+            ) : null}
+          </div>
 
-          <section className="grid gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-foreground">Resumo semanal</h2>
-              <span className="text-xs text-muted-foreground">
-                {trainedDays.size
-                  ? `${trainedDays.size} dia${trainedDays.size === 1 ? "" : "s"}`
-                  : "Sem registros"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-2">
-              {weekDays.map((day) => (
-                <span
-                  key={day.dayOfWeek}
-                  className={
-                    trainedDays.has(day.dayOfWeek)
-                      ? "flex size-10 items-center justify-center rounded-full border border-primary bg-primary text-xs font-bold text-primary-foreground"
-                      : "flex size-10 items-center justify-center rounded-full border border-border text-xs font-bold text-muted-foreground"
-                  }
-                  title={dayOfWeekLabels[day.dayOfWeek]}
-                >
-                  {day.label}
-                </span>
-              ))}
-            </div>
-          </section>
+          {/* Quick actions */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="secondary"
+              className="h-11 text-sm justify-center"
+              disabled={Boolean(currentSession) || isSessionActionLoading}
+              onClick={() => void handleStartFreeWorkout()}
+            >
+              <Play className="size-4" />
+              Treino avulso
+            </Button>
+            <CreateWorkoutPlanDialog onCreated={refetch}>
+              <Button variant="secondary" className="h-11 text-sm justify-center">
+                <Plus className="size-4" />
+                Novo plano
+              </Button>
+            </CreateWorkoutPlanDialog>
+          </div>
         </section>
       ) : null}
-
-      <section className="mt-5 grid grid-cols-2 gap-3">
-        <Button
-          variant="secondary"
-          className="h-12 justify-start text-xs"
-          disabled={Boolean(currentSession) || isSessionActionLoading}
-          onClick={() => void handleStartFreeWorkout()}
-        >
-          Treino avulso
-        </Button>
-        <CreateWorkoutPlanDialog onCreated={refetch}>
-          <Button variant="secondary" className="h-12 justify-start text-xs">
-            Criar plano
-          </Button>
-        </CreateWorkoutPlanDialog>
-      </section>
     </AppScreen>
   );
 }
@@ -305,14 +404,13 @@ function formatTime(value: string) {
 
 function getTodayDayOfWeek(): DayOfWeek {
   const dayOfWeekByIndex: DayOfWeek[] = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
+    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
   ];
-
   return dayOfWeekByIndex[new Date().getDay()];
+}
+
+function getInitials(name?: string | null) {
+  if (!name) return "A";
+  const [first, second] = name.trim().split(/\s+/);
+  return `${first?.[0] ?? ""}${second?.[0] ?? ""}`.toUpperCase();
 }

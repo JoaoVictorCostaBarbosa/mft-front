@@ -10,8 +10,10 @@ export type LocalSyncStatus = "synced" | "pending" | "syncing" | "failed";
 
 export type LocalWorkoutSet = {
   clientOperationId: string;
+  completed: boolean;
   completedAt: string;
   localId: string;
+  origin?: "session" | "history" | "manual";
   reps: number;
   serverId?: string;
   setType: WorkoutSetType;
@@ -124,4 +126,3 @@ export function clearActiveWorkoutSession() {
 
   window.localStorage.removeItem(activeWorkoutStorageKey);
 }
-

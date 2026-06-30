@@ -1,36 +1,56 @@
 @import "tailwindcss";
 
+/* Class-based dark mode for next-themes */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Light theme ── */
 :root {
-  --background: #050607;
-  --foreground: #f8fafc;
+  --background: #F3F3EE;
+  --foreground: #15181C;
 
-  --card: #111827;
-  --card-foreground: #f8fafc;
+  --card: #FFFFFF;
+  --card-foreground: #15181C;
 
-  --popover: #111827;
-  --popover-foreground: #f8fafc;
+  --popover: #FFFFFF;
+  --popover-foreground: #15181C;
 
-  --primary: #00e5e5;
-  --primary-foreground: #020617;
+  --primary: #14B878;
+  --primary-foreground: #052012;
 
-  --secondary: #1f2937;
-  --secondary-foreground: #f8fafc;
+  --secondary: #FAFAF6;
+  --secondary-foreground: #15181C;
 
-  --muted: #1a202c;
-  --muted-foreground: #94a3b8;
+  --muted: #ECECE5;
+  --muted-foreground: #70747B;
 
-  --accent: #00ffff;
-  --accent-foreground: #020617;
+  --faint: #A0A5AB;
 
-  --destructive: #ef4444;
-  --destructive-foreground: #f8fafc;
+  --accent: #14B878;
+  --accent-foreground: #052012;
+  --accent-soft: #E4F6EC;
 
-  --success: #22c55e;
-  --success-foreground: #020617;
+  --destructive: #E66A5E;
+  --destructive-foreground: #FFFFFF;
+
+  --success: #14B878;
+  --success-foreground: #052012;
 
   --warning: #f59e0b;
   --warning-foreground: #020617;
 
+  --border: #E8E8E1;
+  --border-strong: #DBDBD2;
+  --input: #FAFAF6;
+  --ring: #14B878;
+
+  --track: #ECECE5;
+
+  --pill-bg: #15181C;
+  --pill-fg: #F3F3EE;
+
+  --shadow-card: 0 1px 2px rgba(20,22,26,.05), 0 10px 28px -16px rgba(20,22,26,.16);
+
+  /* Exercise muscle group accent colors */
   --exercise-arms: #38bdf8;
   --exercise-back: #60a5fa;
   --exercise-chest: #f472b6;
@@ -38,13 +58,54 @@
   --exercise-full-body: #f59e0b;
   --exercise-legs: #22c55e;
   --exercise-other: #94a3b8;
-  --exercise-shoulders: #00e5e5;
+  --exercise-shoulders: #14B878;
 
-  --border: #263241;
-  --input: #263241;
-  --ring: #00e5e5;
+  --radius: 1.25rem;
+}
 
-  --radius: 0.875rem;
+/* ── Dark theme ── */
+.dark {
+  --background: #0A0C0E;
+  --foreground: #F0F2EE;
+
+  --card: #14171A;
+  --card-foreground: #F0F2EE;
+
+  --popover: #14171A;
+  --popover-foreground: #F0F2EE;
+
+  --primary: #2BD49A;
+  --primary-foreground: #04140D;
+
+  --secondary: #191D21;
+  --secondary-foreground: #F0F2EE;
+
+  --muted: #20252A;
+  --muted-foreground: #969BA1;
+
+  --faint: #686E75;
+
+  --accent: #2BD49A;
+  --accent-foreground: #04140D;
+  --accent-soft: #122019;
+
+  --destructive: #EF786C;
+  --destructive-foreground: #FFFFFF;
+
+  --success: #2BD49A;
+  --success-foreground: #04140D;
+
+  --border: #23272C;
+  --border-strong: #2E343A;
+  --input: #191D21;
+  --ring: #2BD49A;
+
+  --track: #20252A;
+
+  --pill-bg: #1A2822;
+  --pill-fg: #D8F0E6;
+
+  --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -18px rgba(0,0,0,.7);
 }
 
 @theme inline {
@@ -66,8 +127,11 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
 
+  --color-faint: var(--faint);
+
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
 
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -78,6 +142,15 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
 
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-track: var(--track);
+  --color-pill-bg: var(--pill-bg);
+  --color-pill-fg: var(--pill-fg);
+
   --color-exercise-arms: var(--exercise-arms);
   --color-exercise-back: var(--exercise-back);
   --color-exercise-chest: var(--exercise-chest);
@@ -87,17 +160,14 @@
   --color-exercise-other: var(--exercise-other);
   --color-exercise-shoulders: var(--exercise-shoulders);
 
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --radius-sm: 0.5625rem;    /* 9px – inputs */
+  --radius-md: 0.75rem;      /* 12px – icon containers */
+  --radius-lg: 1.25rem;      /* 20px – cards */
+  --radius-xl: 624.9375rem;  /* 9999px – pills / buttons */
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-hanken);
+  --font-display: var(--font-space);
+  --font-mono: var(--font-space);
 }
 
 * {
@@ -113,4 +183,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Space Grotesk on display elements */
+h1, h2, h3 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.025em;
 }

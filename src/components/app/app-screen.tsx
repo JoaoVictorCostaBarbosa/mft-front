@@ -17,7 +17,7 @@ export function AppScreen({
     <>
       <main
         className={cn(
-          "mx-auto flex min-h-screen w-full max-w-md flex-col bg-background px-4 pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-[calc(env(safe-area-inset-top)+1.25rem)]",
+          "mx-auto flex min-h-screen w-full max-w-md flex-col bg-background px-5 pb-[calc(env(safe-area-inset-bottom)+6rem)] pt-[calc(env(safe-area-inset-top)+3.25rem)]",
           className,
         )}
         {...props}

@@ -1,7 +1,7 @@
+import { Dumbbell } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
-import { AppLogo } from "@/components/app/app-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -37,28 +37,32 @@ export function AuthFormLayout({
   socialAction,
 }: AuthFormLayoutProps) {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center bg-background px-5 py-8">
-      <section className={cn("grid gap-6", className)}>
-        <div className="grid gap-8">
-          <AppLogo textClassName="text-2xl" />
-          <div className="grid gap-2">
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center bg-background px-6 py-10">
+      <section className={cn("grid gap-7", className)}>
+        <div className="grid gap-6">
+          <div className="flex items-center gap-2">
+            <div className="flex size-9 items-center justify-center rounded-[10px] bg-primary">
+              <Dumbbell className="size-5 text-primary-foreground stroke-[2.4]" />
+            </div>
+            <span className="font-display text-lg font-bold tracking-tight text-foreground">
+              fittrack
+            </span>
+          </div>
+          <div className="grid gap-1.5">
+            <h1 className="font-display text-[1.75rem] font-bold tracking-[-0.025em] text-foreground">
               {title}
             </h1>
-            <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+            <p className="text-sm leading-relaxed text-muted-foreground">
               {description}
             </p>
           </div>
         </div>
 
-        <form
-          className="grid gap-4 rounded-lg border border-border bg-background p-4 shadow-sm"
-          onSubmit={onSubmit}
-        >
+        <form className="grid gap-4" onSubmit={onSubmit}>
           {error ? (
             <div
               role="alert"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              className="rounded-[10px] border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
             >
               {error}
             </div>
@@ -66,7 +70,7 @@ export function AuthFormLayout({
           {success ? (
             <div
               role="status"
-              className="rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success"
+              className="rounded-[10px] border border-primary/30 bg-accent-soft px-3 py-2.5 text-sm text-primary"
             >
               {success}
             </div>
@@ -74,7 +78,7 @@ export function AuthFormLayout({
           {children}
           <Button
             type="submit"
-            className="mt-2 h-12 rounded-lg text-base"
+            className="mt-1 h-12 text-base font-semibold"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Aguarde..." : submitLabel}
@@ -83,19 +87,18 @@ export function AuthFormLayout({
 
         {socialAction ? (
           <>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
-              <span>ou</span>
+              <span>ou continue com</span>
               <span className="h-px flex-1 bg-border" />
             </div>
-
             {socialAction}
           </>
         ) : null}
 
         <p className="text-center text-sm text-muted-foreground">
           {footerText}{" "}
-          <Link href={footerHref} className="font-semibold text-primary">
+          <Link href={footerHref} className="font-semibold text-primary hover:underline">
             {footerAction}
           </Link>
         </p>

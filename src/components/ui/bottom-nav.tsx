@@ -24,13 +24,13 @@ function BottomNav({ className, items, ...props }: BottomNavProps) {
     <nav
       data-slot="bottom-nav"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.6rem)] pt-2 backdrop-blur supports-[backdrop-filter]:bg-card/85",
+        "fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur supports-[backdrop-filter]:bg-card/85",
         className,
       )}
       {...props}
     >
       <div
-        className="mx-auto grid max-w-md grid-cols-[repeat(var(--bottom-nav-count),minmax(0,1fr))] gap-1"
+        className="mx-auto grid max-w-md grid-cols-[repeat(var(--bottom-nav-count),minmax(0,1fr))]"
         style={
           {
             "--bottom-nav-count": items.length,
@@ -46,12 +46,12 @@ function BottomNav({ className, items, ...props }: BottomNavProps) {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-md px-1.5 text-[0.6875rem] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
-                isActive && "bg-secondary text-primary shadow-sm",
+                "flex min-h-[3rem] flex-col items-center justify-center gap-0.5 rounded-md px-1 transition-colors",
+                isActive ? "text-primary" : "text-faint hover:text-muted-foreground",
               )}
             >
-              <span className="[&_svg]:size-5">{item.icon}</span>
-              <span className="max-w-full truncate">{item.label}</span>
+              <span className="[&_svg]:size-[22px] [&_svg]:stroke-[2]">{item.icon}</span>
+              <span className="text-[9.5px] font-semibold max-w-full truncate">{item.label}</span>
             </Link>
           );
         })}
