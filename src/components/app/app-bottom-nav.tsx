@@ -1,6 +1,6 @@
 "use client";
 
-import { Dumbbell, Home, LineChart, User } from "lucide-react";
+import { CalendarDays, Dumbbell, House, UserRound } from "lucide-react";
 
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { routes } from "@/lib/routes";
@@ -9,7 +9,7 @@ const items = [
   {
     href: routes.dashboard,
     label: "Home",
-    icon: <Home />,
+    icon: <House />,
   },
   {
     href: routes.workouts,
@@ -18,13 +18,13 @@ const items = [
   },
   {
     href: routes.progress,
-    label: "Progresso",
-    icon: <LineChart />,
+    label: "Histórico",
+    icon: <CalendarDays />,
   },
   {
     href: routes.profile,
     label: "Perfil",
-    icon: <User />,
+    icon: <UserRound />,
   },
 ];
 
