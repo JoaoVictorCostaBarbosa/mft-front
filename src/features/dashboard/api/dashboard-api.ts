@@ -92,9 +92,12 @@ async function getCurrentPlanOrNull(): Promise<WorkoutPlan | null> {
 
 function getCurrentWeekRange() {
   const today = new Date();
-  const start = new Date(today);
+  // Week starts on Monday to match the display (Mon–Sun)
+  const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
 
-  start.setDate(today.getDate() - today.getDay());
+  const start = new Date(today);
+  start.setDate(today.getDate() - daysFromMonday);
 
   const end = new Date(start);
   end.setDate(start.getDate() + 6);

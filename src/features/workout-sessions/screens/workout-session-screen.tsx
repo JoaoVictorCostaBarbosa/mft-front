@@ -1269,10 +1269,10 @@ function SessionExerciseCard({
               setRowGridClassName,
             )}
           >
-            <span>Set</span>
-            <span>Ant.</span>
-            <span>kg</span>
-            <span>Reps</span>
+            <span className="text-center">Set</span>
+            <span className="text-center">Ant.</span>
+            <span className="text-center">kg</span>
+            <span className="text-center">Reps</span>
             <span className="text-right">✓</span>
           </div>
 
@@ -1538,7 +1538,7 @@ function SavedSetRow({
             set.origin === "history" && !set.completed && "opacity-60",
           )}
         >
-          <span className="text-xs font-bold text-primary">
+          <span className="text-center text-xs font-bold text-primary">
             {getSetTypeShortLabel(set.setType)}
             {index + 1}
           </span>
