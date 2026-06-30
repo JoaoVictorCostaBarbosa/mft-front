@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import { useAuthSession } from "@/features/auth/components/auth-provider";
 import { getUnauthenticatedEntryRoute } from "@/features/auth/lib/auth-entry-storage";
 
@@ -23,6 +24,10 @@ export function AuthGuard({
       router.replace(redirectTo ?? getUnauthenticatedEntryRoute());
     }
   }, [redirectTo, router, status]);
+
+  if (status === "loading") {
+    return <LoadingScreen />;
+  }
 
   if (status !== "authenticated") {
     return null;
