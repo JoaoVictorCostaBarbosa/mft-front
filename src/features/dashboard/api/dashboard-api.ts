@@ -1,4 +1,3 @@
-import type { BodyMetricEntry } from "@/features/body-metrics";
 import type { CurrentWorkoutSession } from "@/features/workout-sessions/types";
 import {
   getCurrentWorkoutSession,
@@ -26,14 +25,12 @@ export async function getDashboardData(): Promise<DashboardData> {
     currentWorkoutSession,
     workoutPlans,
     workoutTemplates,
-    measurements,
     weeklySummary,
   ] = await Promise.all([
     getCurrentPlanOrNull(),
     getCurrentSessionOrNull(),
     getWorkoutPlans(),
     apiFetch<WorkoutTemplateSummary[]>(apiRoutes.workoutTemplates.list),
-    apiFetch<BodyMetricEntry[]>(apiRoutes.measurements.list),
     getWorkoutSessionWeeklySummary(weekRange.startDate, weekRange.endDate),
   ]);
   const nextRoutineItem =
@@ -45,7 +42,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     currentWorkoutPlan,
     currentWorkoutSession,
     nextRoutineItem,
-    measurements,
     weeklySummary,
     workoutPlans,
     workoutTemplates,

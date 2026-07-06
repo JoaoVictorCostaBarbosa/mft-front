@@ -75,6 +75,16 @@ export function DashboardScreen() {
   );
 
   const weeklyCount = trainedDays.size;
+  const weeklyVolumeKg = data?.weeklySummary.total_volume_kg ?? 0;
+  const weeklyVolumeLabel =
+    weeklyVolumeKg >= 1000
+      ? new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(
+          weeklyVolumeKg / 1000,
+        )
+      : new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(
+          weeklyVolumeKg,
+        );
+  const weeklyVolumeUnit = weeklyVolumeKg >= 1000 ? "t" : "kg";
   const weeklyProgress = Math.min(weeklyCount / WEEK_GOAL, 1);
   const ringDash = weeklyProgress * RING_CIRCUMFERENCE;
   const ringGap = RING_CIRCUMFERENCE - ringDash;
@@ -273,10 +283,10 @@ export function DashboardScreen() {
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="font-display text-[28px] font-semibold leading-none tracking-[-0.03em] text-foreground">
-                  —
+                  {weeklyVolumeLabel}
                 </span>
                 <span className="font-display text-sm font-medium text-muted-foreground">
-                  t
+                  {weeklyVolumeUnit}
                 </span>
               </div>
               <div className="mt-1.5 flex items-center gap-1.5">
