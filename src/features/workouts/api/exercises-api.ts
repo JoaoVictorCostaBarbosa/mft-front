@@ -64,6 +64,28 @@ export function getExercises({
   );
 }
 
+export function getExerciseById(exerciseId: string) {
+  return apiFetch<Exercise>(apiRoutes.exercises.byId(exerciseId));
+}
+
+export type ExercisePersonalRecord = {
+  exercise_id: string;
+  exercise_name: string;
+  max_weight: number;
+  reps: number;
+  achieved_at: string;
+};
+
+export type ExercisePersonalRecordsResponse = {
+  items: ExercisePersonalRecord[];
+};
+
+export function getPersonalRecords() {
+  return apiFetch<ExercisePersonalRecordsResponse>(
+    apiRoutes.exercises.personalRecords,
+  );
+}
+
 export function getExerciseLastPerformances(
   payload: GetExerciseLastPerformancesRequest,
 ) {
