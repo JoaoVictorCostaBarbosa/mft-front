@@ -7,6 +7,11 @@ import * as React from "react";
 
 import { AppScreen } from "@/components/app/app-screen";
 import { useAuthSession } from "@/features/auth";
+import { AvatarUpload } from "@/features/profile/components/avatar-upload";
+import { EditProfileDialog } from "@/features/profile/components/edit-profile-dialog";
+import { GoalDialog } from "@/features/profile/components/goal-dialog";
+import { useProfileStats } from "@/features/profile/hooks/use-profile-stats";
+import { getGoalLabel } from "@/features/profile/lib/goals";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -19,23 +24,27 @@ const themeOptions: Array<{ value: ThemeOption; label: string; icon: React.React
 ];
 
 const settingsItems = [
-  { label: "Metas e objetivos", icon: <Target className="size-[18px]" /> },
   { label: "Unidades · kg / cm", icon: <Ruler className="size-[18px]" /> },
   { label: "Notificações", icon: <Bell className="size-[18px]" /> },
   { label: "Ajuda e suporte", icon: <CircleHelp className="size-[18px]" /> },
 ];
 
-function getInitials(name?: string | null) {
-  if (!name) return "U";
-  const [first, second] = name.trim().split(/\s+/);
-  return `${first?.[0] ?? ""}${second?.[0] ?? ""}`.toUpperCase();
-}
-
 export function ProfileScreen() {
   const router = useRouter();
   const { user, clearSession } = useAuthSession();
   const { theme, setTheme } = useTheme();
+  const { totalWorkouts, streakWeeks, recordsCount } = useProfileStats();
   const [isSigningOut, setIsSigningOut] = React.useState(false);
+
+  const profileStats: Array<{
+    label: string;
+    value: number | null;
+    unit?: string;
+  }> = [
+    { label: "Treinos", value: totalWorkouts },
+    { label: "Sequência", value: streakWeeks, unit: "sem" },
+    { label: "Recordes", value: recordsCount },
+  ];
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -61,9 +70,7 @@ export function ProfileScreen() {
 
       {/* Identity */}
       <div className="mb-[22px] flex items-center gap-4">
-        <div className="flex size-[72px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-primary bg-accent-soft font-display text-[28px] font-semibold text-primary">
-          {getInitials(user?.name)}
-        </div>
+        <AvatarUpload />
         <div className="min-w-0 flex-1">
           <p className="font-display text-[21px] font-bold tracking-[-0.02em] text-foreground truncate">
             {user?.name ?? "Usuário"}
@@ -72,12 +79,15 @@ export function ProfileScreen() {
             {user?.email ?? ""}
           </p>
         </div>
-        <button
-          type="button"
-          className="flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-foreground"
-        >
-          <Pencil className="size-[17px]" />
-        </button>
+        <EditProfileDialog>
+          <button
+            type="button"
+            aria-label="Editar perfil"
+            className="flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-foreground"
+          >
+            <Pencil className="size-[17px]" />
+          </button>
+        </EditProfileDialog>
       </div>
 
       {/* Stats bar */}
@@ -86,11 +96,7 @@ export function ProfileScreen() {
         style={{ boxShadow: "var(--shadow-card)" }}
       >
         <div className="flex">
-          {[
-            { label: "Treinos", value: "—" },
-            { label: "Sequência", value: "—" },
-            { label: "Recordes", value: "—" },
-          ].map((stat, i) => (
+          {profileStats.map((stat, i) => (
             <div
               key={stat.label}
               className={cn(
@@ -99,7 +105,12 @@ export function ProfileScreen() {
               )}
             >
               <p className="font-display text-2xl font-semibold tracking-[-0.03em] text-foreground">
-                {stat.value}
+                {stat.value ?? "—"}
+                {stat.value !== null && stat.unit ? (
+                  <span className="ml-1 text-sm font-medium text-muted-foreground">
+                    {stat.unit}
+                  </span>
+                ) : null}
               </p>
               <p className="mt-0.5 text-[12.5px] font-semibold text-muted-foreground">
                 {stat.label}
@@ -145,6 +156,27 @@ export function ProfileScreen() {
         className="mb-5 overflow-hidden rounded-[20px] border border-border bg-card"
         style={{ boxShadow: "var(--shadow-card)" }}
       >
+        <GoalDialog>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3.5 border-b border-border px-4 py-[15px] text-left"
+          >
+            <div className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] border border-border bg-secondary text-muted-foreground">
+              <Target className="size-[18px]" />
+            </div>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-foreground">
+                Metas e objetivos
+              </span>
+              {getGoalLabel(user?.goal) ? (
+                <span className="block text-[12.5px] font-medium text-muted-foreground">
+                  {getGoalLabel(user?.goal)}
+                </span>
+              ) : null}
+            </span>
+            <ChevronRight className="size-[18px] text-faint" />
+          </button>
+        </GoalDialog>
         {settingsItems.map((item, i) => (
           <button
             key={item.label}

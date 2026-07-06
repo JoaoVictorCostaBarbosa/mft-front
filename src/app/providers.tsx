@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 
 import { Toaster } from "@/components/ui/toast";
 import { AuthProvider } from "@/features/auth";
+import { PendingGoalSync } from "@/features/profile";
 import { ActiveWorkoutProvider } from "@/features/workout-sessions";
 import { ExercisesProvider, WorkoutPlansProvider } from "@/features/workouts";
 
@@ -16,6 +17,7 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <AuthProvider>
+        <PendingGoalSync />
         <ExercisesProvider>
           <WorkoutPlansProvider>
             <ActiveWorkoutProvider>
