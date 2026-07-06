@@ -1,3 +1,5 @@
+export type UserGoal = "muscle" | "loss" | "strength" | "health";
+
 export type AuthSession = {
   user: {
     id: string;
@@ -5,6 +7,7 @@ export type AuthSession = {
     email: string;
     role: "Admin" | "User";
     url_img?: string | null;
+    goal?: UserGoal | null;
   };
 };
 

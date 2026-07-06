@@ -47,8 +47,13 @@ export function removeExerciseFromWorkoutTemplate(
   });
 }
 
+// Soft delete: o hard delete falha por FK quando o template tem sessões
+// registradas (workout_log.workout_template_id não tem ON DELETE CASCADE).
 export function deleteWorkoutTemplate(workoutTemplateId: string) {
-  return apiFetch<void>(apiRoutes.workoutTemplates.byId(workoutTemplateId), {
-    method: "DELETE",
-  });
+  return apiFetch<void>(
+    apiRoutes.workoutTemplates.softDelete(workoutTemplateId),
+    {
+      method: "DELETE",
+    },
+  );
 }

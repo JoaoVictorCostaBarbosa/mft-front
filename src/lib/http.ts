@@ -45,14 +45,21 @@ export async function apiFetch<TResponse>(
   const url = path.startsWith("http")
     ? path
     : `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  const isFormDataBody = body instanceof FormData;
   const requestInit = {
     ...init,
     credentials: init.credentials ?? "include",
     headers: {
-      "Content-Type": "application/json",
+      // FormData define o próprio Content-Type (multipart com boundary).
+      ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
       ...headers,
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body:
+      body === undefined
+        ? undefined
+        : isFormDataBody
+          ? body
+          : JSON.stringify(body),
   } satisfies RequestInit;
 
   const response = await fetch(url, requestInit);

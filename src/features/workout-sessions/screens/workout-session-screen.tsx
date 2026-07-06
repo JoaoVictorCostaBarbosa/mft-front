@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { AppScreen } from "@/components/app/app-screen";
-import { ScreenHeader } from "@/components/app/screen-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -2199,13 +2198,6 @@ function findServerSetId(exercises: SessionExercise[], localSetId: string) {
   }
 
   return undefined;
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 function formatElapsed(startedAt: string) {

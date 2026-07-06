@@ -27,13 +27,16 @@ export function WorkoutPlanActions({
   isCurrent,
   plan,
 }: WorkoutPlanActionsProps) {
-  const { setCurrentPlan, settingCurrentPlanId, updatePlanName } =
+  const { deletePlan, setCurrentPlan, settingCurrentPlanId, updatePlanName } =
     useWorkoutPlans();
   const menuRef = React.useRef<HTMLDivElement>(null);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [deleteError, setDeleteError] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const isSettingCurrent = settingCurrentPlanId === plan.id;
 
   React.useEffect(() => {
@@ -65,6 +68,20 @@ export function WorkoutPlanActions({
   async function handleSetCurrent() {
     setIsMenuOpen(false);
     await setCurrentPlan(plan.id);
+  }
+
+  async function handleDelete() {
+    setDeleteError("");
+    setIsDeleting(true);
+
+    try {
+      await deletePlan(plan.id);
+      setIsDeleteOpen(false);
+    } catch (error) {
+      setDeleteError(getApiErrorMessage(error));
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -131,9 +148,59 @@ export function WorkoutPlanActions({
             >
               Editar nome
             </button>
+            <button
+              type="button"
+              className="rounded-sm px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setDeleteError("");
+                setIsDeleteOpen(true);
+              }}
+            >
+              Excluir plano
+            </button>
           </div>
         ) : null}
       </div>
+
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir plano</DialogTitle>
+            <DialogDescription>
+              {`Excluir "${plan.name}" remove também a rotina vinculada a ele. Os treinos (templates) e o histórico de sessões são mantidos. Essa ação não pode ser desfeita.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError ? (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {deleteError}
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={() => void handleDelete()}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir plano"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>

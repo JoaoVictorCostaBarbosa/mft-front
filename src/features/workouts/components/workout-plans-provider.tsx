@@ -4,6 +4,7 @@ import * as React from "react";
 
 import {
   createWorkoutPlan as createWorkoutPlanRequest,
+  deleteWorkoutPlan as deleteWorkoutPlanRequest,
   getCurrentWorkoutPlan,
   getWorkoutPlans,
   setCurrentWorkoutPlan,
@@ -27,6 +28,7 @@ type WorkoutPlansContextValue = {
   createPlan: (payload: CreateWorkoutPlanRequest) => Promise<WorkoutPlanSummary>;
   updatePlanName: (planId: string, name: string) => Promise<WorkoutPlanSummary>;
   setCurrentPlan: (planId: string) => Promise<void>;
+  deletePlan: (planId: string) => Promise<void>;
 };
 
 const WorkoutPlansContext =
@@ -144,6 +146,15 @@ export function WorkoutPlansProvider({ children }: WorkoutPlansProviderProps) {
     }
   }, []);
 
+  const deletePlan = React.useCallback(async (planId: string) => {
+    await deleteWorkoutPlanRequest(planId);
+
+    setPlans((currentPlans) =>
+      currentPlans?.filter((plan) => plan.id !== planId) ?? null,
+    );
+    setCurrentPlanId((currentId) => (currentId === planId ? null : currentId));
+  }, []);
+
   const value = React.useMemo<WorkoutPlansContextValue>(
     () => ({
       plans,
@@ -156,10 +167,12 @@ export function WorkoutPlansProvider({ children }: WorkoutPlansProviderProps) {
       createPlan,
       updatePlanName,
       setCurrentPlan,
+      deletePlan,
     }),
     [
       createPlan,
       currentPlanId,
+      deletePlan,
       error,
       isLoading,
       loadPlans,

@@ -9,13 +9,17 @@ export const apiRoutes = {
   },
   users: {
     me: "/api/users/me",
+    update: "/api/users",
     avatar: "/api/users/me/avatar",
     email: "/api/users/me/email",
+    goal: "/api/users/me/goal",
     password: "/api/users/me/password",
     sendCode: "/api/users/send-code",
   },
   exercises: {
     lastPerformances: "/api/exercises/last-performances",
+    personalRecords: "/api/exercises/personal-records",
+    byId: (exerciseId: string) => `/api/exercises/${exerciseId}`,
     list: (page: number, perPage: number) =>
       `/api/exercises?page=${page}&per_page=${perPage}`,
     byEquipment: (equipment: string, page: number, perPage: number) =>
@@ -27,6 +31,8 @@ export const apiRoutes = {
   },
   measurements: {
     list: "/api/measurements",
+    create: "/api/measurements",
+    byId: (measurementId: string) => `/api/measurements/${measurementId}`,
   },
   workoutPlans: {
     list: "/api/workout-plans",
@@ -34,6 +40,8 @@ export const apiRoutes = {
     changeName: "/api/workout-plans/change-name",
     current: "/api/workout-plans/current",
     byId: (workoutPlanId: string) => `/api/workout-plans/${workoutPlanId}`,
+    softDelete: (workoutPlanId: string) =>
+      `/api/workout-plans/${workoutPlanId}/soft-delete`,
     addRoutineItem: (workoutPlanId: string) =>
       `/api/workout-plans/${workoutPlanId}/routine-items`,
     nextRoutineItem: (workoutPlanId: string) =>
@@ -52,6 +60,8 @@ export const apiRoutes = {
     changeName: "/api/workout-templates/change-name",
     removeExercise: "/api/workout-templates/remove-exercise",
     byId: (workoutId: string) => `/api/workout-templates/${workoutId}`,
+    softDelete: (workoutId: string) =>
+      `/api/workout-templates/${workoutId}/soft-delete`,
   },
   workoutSessions: {
     create: "/api/workout-sessions",

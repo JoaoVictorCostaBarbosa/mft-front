@@ -1,4 +1,3 @@
-import type { BodyMetricEntry } from "@/features/body-metrics";
 import type {
   CurrentWorkoutSession,
   WorkoutSessionWeeklySummary,
@@ -14,7 +13,6 @@ export type DashboardData = {
   currentWorkoutPlan: WorkoutPlan | null;
   currentWorkoutSession: CurrentWorkoutSession | null;
   nextRoutineItem: WorkoutPlanRoutineItem | null;
-  measurements: BodyMetricEntry[];
   weeklySummary: WorkoutSessionWeeklySummary;
   workoutPlans: WorkoutPlanSummary[];
   workoutTemplates: WorkoutTemplateSummary[];
