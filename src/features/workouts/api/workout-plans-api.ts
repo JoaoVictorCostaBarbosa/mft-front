@@ -36,6 +36,14 @@ export function updateWorkoutPlanName(payload: UpdateWorkoutPlanNameRequest) {
   });
 }
 
+// Soft delete: o hard delete falha por FK quando o plano tem sessões
+// registradas (workout_log.workout_plan_id não tem ON DELETE CASCADE).
+export function deleteWorkoutPlan(workoutPlanId: string) {
+  return apiFetch<void>(apiRoutes.workoutPlans.softDelete(workoutPlanId), {
+    method: "DELETE",
+  });
+}
+
 export function setCurrentWorkoutPlan(workoutPlanId: string) {
   return apiFetch<void>(apiRoutes.workoutPlans.setCurrent(workoutPlanId), {
     method: "PUT",
