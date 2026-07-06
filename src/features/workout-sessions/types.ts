@@ -100,6 +100,8 @@ export type WorkoutSessionHistoryItem = {
   id: string;
   started_at: string;
   status: WorkoutSessionStatus;
+  total_sets: number;
+  total_volume_kg: number;
   workout_plan_id: string;
   workout_template: WorkoutSessionTemplate;
 };
@@ -117,4 +119,5 @@ export type WorkoutSessionWeeklySummaryDay = {
 
 export type WorkoutSessionWeeklySummary = {
   days: WorkoutSessionWeeklySummaryDay[];
+  total_volume_kg: number;
 };

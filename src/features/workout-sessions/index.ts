@@ -16,6 +16,7 @@ export {
   ActiveWorkoutProvider,
   useActiveWorkout,
 } from "./components/active-workout-provider";
+export { useWorkoutSessionHistory } from "./hooks/use-workout-session-history";
 export { WorkoutSessionScreen } from "./screens/workout-session-screen";
 export type {
   AddWorkoutSessionExerciseRequest,
