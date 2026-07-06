@@ -1,5 +1,6 @@
 export type BodyMetricEntry = {
   id: string;
+  created_at: string;
   weight?: number;
   height?: number;
   shoulders?: number;
@@ -16,4 +17,4 @@ export type BodyMetricEntry = {
   right_calf?: number;
 };
 
-export type CreateBodyMetricEntry = Omit<BodyMetricEntry, "id">;
+export type CreateBodyMetricEntry = Omit<BodyMetricEntry, "id" | "created_at">;
