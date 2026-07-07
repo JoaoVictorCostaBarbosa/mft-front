@@ -2,6 +2,7 @@
 
 import { ChevronRight, Clock, Dumbbell, Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { AppScreen } from "@/components/app/app-screen";
@@ -10,21 +11,51 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/toast";
+import {
+  createWorkoutSession,
+  useActiveWorkout,
+} from "@/features/workout-sessions";
 import {
   CreateWorkoutPlanDialog,
   routineModeLabels,
   WorkoutPlanActions,
   useWorkoutPlans,
 } from "@/features/workouts";
+import { getApiErrorMessage } from "@/lib/http";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 type TabValue = "plans" | "exercises";
 
 export function WorkoutsScreen() {
+  const router = useRouter();
   const { plans, currentPlanId, error, isLoading, loadPlans, refetchPlans } = useWorkoutPlans();
+  const { refetchCurrentSession } = useActiveWorkout();
   const [tab, setTab] = React.useState<TabValue>("plans");
   const [query, setQuery] = React.useState("");
+  const [isStartingFreeWorkout, setIsStartingFreeWorkout] = React.useState(false);
+
+  async function handleStartFreeWorkout() {
+    setIsStartingFreeWorkout(true);
+    try {
+      await createWorkoutSession({ workout_plan_id: null, workout_template_id: null });
+      toast({
+        title: "Treino avulso iniciado",
+        description: "Adicione exercícios para registrar suas séries.",
+      });
+      await refetchCurrentSession();
+      router.push(routes.workoutSession);
+    } catch (error) {
+      toast({
+        title: "Não foi possível iniciar",
+        description: getApiErrorMessage(error),
+        variant: "destructive",
+      });
+    } finally {
+      setIsStartingFreeWorkout(false);
+    }
+  }
 
   const currentPlan = React.useMemo(
     () => (plans ? (plans.find((plan) => plan.id === currentPlanId) ?? null) : null),
@@ -157,29 +188,30 @@ export function WorkoutsScreen() {
             />
           ) : null}
 
-          {!isLoading && !error && plans?.length === 0 ? (
-            <EmptyState
-              title="Nenhum plano cadastrado"
-              description="Crie um plano para organizar sua rotina de treinos."
-              action={
-                <CreateWorkoutPlanDialog>
-                  <Button>Criar plano</Button>
-                </CreateWorkoutPlanDialog>
-              }
-            />
-          ) : null}
-
-          {!error && plans && plans.length > 0 ? (
+          {!error && plans ? (
             <div className="grid gap-3">
               {/* Iniciar treino vazio — dashed button */}
               <button
                 type="button"
-                className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[999px] border-[1.5px] border-dashed border-border-strong bg-card text-[15.5px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary"
-                onClick={() => void undefined}
+                disabled={isStartingFreeWorkout}
+                className="flex h-[50px] w-full items-center justify-center gap-2 rounded-[999px] border-[1.5px] border-dashed border-border-strong bg-card text-[15.5px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:pointer-events-none disabled:opacity-60"
+                onClick={() => void handleStartFreeWorkout()}
               >
                 <Plus className="size-[19px] stroke-[2.2]" />
-                Iniciar treino vazio
+                {isStartingFreeWorkout ? "Iniciando..." : "Iniciar treino vazio"}
               </button>
+
+              {plans.length === 0 ? (
+                <EmptyState
+                  title="Nenhum plano cadastrado"
+                  description="Crie um plano para organizar sua rotina de treinos."
+                  action={
+                    <CreateWorkoutPlanDialog>
+                      <Button>Criar plano</Button>
+                    </CreateWorkoutPlanDialog>
+                  }
+                />
+              ) : null}
 
               {/* Current plan */}
               {currentPlan ? (
