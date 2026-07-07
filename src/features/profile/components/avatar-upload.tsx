@@ -18,7 +18,11 @@ function getInitials(name?: string | null) {
   return `${first?.[0] ?? ""}${second?.[0] ?? ""}`.toUpperCase();
 }
 
-export function AvatarUpload() {
+type AvatarUploadProps = {
+  size?: "md" | "lg";
+};
+
+export function AvatarUpload({ size = "md" }: AvatarUploadProps) {
   const { user, setAuthenticatedUser } = useAuthSession();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = React.useState(false);
@@ -74,32 +78,60 @@ export function AvatarUpload() {
       type="button"
       disabled={isUploading}
       onClick={() => inputRef.current?.click()}
-      className="group relative size-[72px] shrink-0 overflow-hidden rounded-full border-[1.5px] border-primary bg-accent-soft"
+      className={cn(
+        "group relative shrink-0",
+        size === "md" ? "size-[72px]" : "size-[88px]",
+      )}
       aria-label="Alterar foto de perfil"
     >
-      {user?.url_img ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={user.url_img}
-          alt={user?.name ?? "Foto de perfil"}
-          className="size-full object-cover"
-        />
-      ) : (
-        <span className="flex size-full items-center justify-center font-display text-[28px] font-semibold text-primary">
-          {getInitials(user?.name)}
+      <span className="block size-full overflow-hidden rounded-full border-[1.5px] border-primary bg-accent-soft">
+        {user?.url_img ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.url_img}
+            alt={user?.name ?? "Foto de perfil"}
+            className="size-full object-cover"
+          />
+        ) : (
+          <span
+            className={cn(
+              "flex size-full items-center justify-center font-display font-semibold text-primary",
+              size === "md" ? "text-[28px]" : "text-[34px]",
+            )}
+          >
+            {getInitials(user?.name)}
+          </span>
+        )}
+
+        <span
+          className={cn(
+            "absolute inset-0 flex items-center justify-center rounded-full bg-black/45 text-white transition-opacity",
+            isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          )}
+        >
+          {isUploading ? (
+            <Loader2 className="size-5 animate-spin" />
+          ) : (
+            <Camera className="size-5" />
+          )}
         </span>
-      )}
+      </span>
 
       <span
         className={cn(
-          "absolute inset-0 flex items-center justify-center bg-black/45 text-white transition-opacity",
-          isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+          "absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground",
+          size === "md" ? "size-[24px]" : "size-[28px]",
         )}
       >
         {isUploading ? (
-          <Loader2 className="size-5 animate-spin" />
+          <Loader2
+            className={cn(
+              "animate-spin",
+              size === "md" ? "size-[13px]" : "size-[15px]",
+            )}
+          />
         ) : (
-          <Camera className="size-5" />
+          <Camera className={size === "md" ? "size-[13px]" : "size-[15px]"} />
         )}
       </span>
 
