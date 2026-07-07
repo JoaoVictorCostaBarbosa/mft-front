@@ -10,15 +10,8 @@ export function sendChangeCode() {
   });
 }
 
-export function updateUserName(payload: { name: string; code: number }) {
+export function updateUserName(payload: { name: string }) {
   return apiFetch<UserResponse>(apiRoutes.users.update, {
-    method: "PATCH",
-    body: payload,
-  });
-}
-
-export function updateUserEmail(payload: { email: string; code: number }) {
-  return apiFetch<UserResponse>(apiRoutes.users.email, {
     method: "PATCH",
     body: payload,
   });
