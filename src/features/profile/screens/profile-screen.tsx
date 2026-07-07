@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronRight, CircleHelp, LogOut, Monitor, Moon, Pencil, Ruler, Settings, Sun, Target } from "lucide-react";
+import { Bell, ChevronRight, CircleHelp, LogOut, Monitor, Moon, Pencil, Settings, Sun, Target } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -24,7 +24,6 @@ const themeOptions: Array<{ value: ThemeOption; label: string; icon: React.React
 ];
 
 const settingsItems = [
-  { label: "Unidades · kg / cm", icon: <Ruler className="size-[18px]" /> },
   { label: "Notificações", icon: <Bell className="size-[18px]" /> },
   { label: "Ajuda e suporte", icon: <CircleHelp className="size-[18px]" /> },
 ];
