@@ -273,7 +273,7 @@ export function ProgressScreen() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-foreground">
-                  {session.workout_template.name}
+                  {session.workout_template?.name ?? "Treino avulso"}
                 </p>
                 <p className="mt-0.5 text-[13px] font-medium text-muted-foreground">
                   {formatSessionDetails(session)}

@@ -102,8 +102,8 @@ export type WorkoutSessionHistoryItem = {
   status: WorkoutSessionStatus;
   total_sets: number;
   total_volume_kg: number;
-  workout_plan_id: string;
-  workout_template: WorkoutSessionTemplate;
+  workout_plan_id: string | null;
+  workout_template: WorkoutSessionTemplate | null;
 };
 
 export type WorkoutSessionHistoryResponse = {
