@@ -154,8 +154,17 @@ export function DashboardScreen() {
             Bom treino, {user?.name?.split(" ")[0] ?? "Atleta"}
           </h1>
         </div>
-        <div className="flex size-[42px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-primary bg-accent-soft font-display text-base font-bold text-primary">
-          {getInitials(user?.name)}
+        <div className="flex size-[42px] shrink-0 items-center justify-center overflow-hidden rounded-full border-[1.5px] border-primary bg-accent-soft font-display text-base font-bold text-primary">
+          {user?.url_img ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.url_img}
+              alt={user?.name ?? "Foto de perfil"}
+              className="size-full object-cover"
+            />
+          ) : (
+            getInitials(user?.name)
+          )}
         </div>
       </header>
 
